@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
-import { POINT_CONVERSION_COMPRESSED } from "node:constants";
 import { post } from "request";
+import { MessengerBuilder } from ".";
+import { ResponseMessager } from "../dto";
 import { TaskPostBackMessage, TaskReceiveMessage } from "../service";
 
 export class Messenger {
@@ -14,23 +15,15 @@ export class Messenger {
         this.psid = this.webhook_event.sender.id;
 
         //debug
-        // this.Log.debug("event", this.webhook_event, "sender id", this.psid);
+        this.Log.log(`event: ${this.webhook_event} | sender id: ${this.psid}`);
     }
 
-    reply(content, call_back = undefined) {
-        let rep_body = {
-            recipient: {
-                id: this.psid,
-            },
-            message: {
-                text: content,
-            },
-        };
+    reply(data: ResponseMessager, call_back = undefined) {
         post(
             {
                 uri: process.env.FACEBOOK_HOOK_URI,
                 qs: { access_token: process.env.PAGE_ACCESS_TOKEN },
-                json: rep_body,
+                json: new MessengerBuilder().set(data).build(this.psid),
             },
             (err, res, body) => {
                 if (err) this.Log.error("Unable to send message", err);

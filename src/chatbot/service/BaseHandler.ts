@@ -1,1 +1,3 @@
-export abstract class BaseHandler {}
+export abstract class BaseHandler {
+    abstract handler()
+}
