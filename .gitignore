@@ -38,3 +38,5 @@ lerna-debug.log*
 
 # environment variables
 *.env
+
+ngrok.exe

@@ -6,9 +6,9 @@ import { AppConfigService } from "./app-config.service";
 import { AppConfig } from "./app.config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { ChatbotModule } from "./chatbot";
 import { AppConfigModule } from "./lib/app-config";
 import { MongoIdGeneratorModule } from "./lib/database/mongo";
-
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -24,6 +24,7 @@ import { MongoIdGeneratorModule } from "./lib/database/mongo";
         }),
         MongooseModule.forRoot(process.env.MONGO_DATABASE_URI),
         MongoIdGeneratorModule,
+        ChatbotModule,
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],
