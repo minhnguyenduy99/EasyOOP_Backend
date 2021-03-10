@@ -2,6 +2,8 @@ import { BaseMessageHandler } from "./BaseMessageHandler";
 
 export class TaskPostBackMessage extends BaseMessageHandler {
     handler() {
+        this.Log.log(JSON.stringify(this.body))
+
         let payload = this.body.payload
         switch (payload) {
             case "yes":
@@ -11,6 +13,5 @@ export class TaskPostBackMessage extends BaseMessageHandler {
                 this.msg.reply({ text: 'you choise no' })
                 return
         }
-
     }
 }

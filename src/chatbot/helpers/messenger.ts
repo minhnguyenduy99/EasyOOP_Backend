@@ -5,10 +5,10 @@ import { ResponseMessager } from "../dto";
 import { TaskPostBackMessage, TaskReceiveMessage } from "../service";
 
 export class Messenger {
-    protected webhook_event: any;
+    protected webhook_event: any; // an entry of "entry" obj return from webhook
     protected psid: string;
 
-    constructor(webhook_event, private Log: Logger = new Logger()) {
+    constructor(webhook_event, protected Log: Logger = new Logger()) {
         //cache
         this.webhook_event = webhook_event;
         //parse

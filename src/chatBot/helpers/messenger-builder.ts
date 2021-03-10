@@ -1,54 +1,67 @@
-import { ResponseMessager } from "../dto"
+import { MessengerAttachment, QuickRepliesButton, ResponseMessager, ResponseMessengerButton } from "../dto"
 
 export class MessengerBuilder {
     private body: any
-    private message: string
 
     public constructor() {
         this.body = {}
     }
 
     public set(data: ResponseMessager) {
-        data.text && this.setMessage(data.text)
-        data.buttons?.forEach(e => this.addButton(e.title, e.payload))
-        data.title && this.setTitleAttachment(data.title)
-        data.subtitle && this.setSubtitleAttachment(data.subtitle)
-        data.image_url && this.setImageAttachment(data.image_url)
+        data.attachment?.forEach(e => this.addAttachment(e)) // still bug
+
+        data.quick_replies?.forEach(e => this.addQuickButton(e))
+        data.buttons?.forEach(e => this.addButton(e))
+        data.text && this.setText(data.text)
         return this
     }
 
-    public add(data: ResponseMessager) {
-        this.putNext()
-        this.set(data)
-    }
-
-    public setMessage(content: string) {
-        this.body.text = content
+    setText(text: string) {
+        if (this.body.attachment) {
+            this.body.attachment.payload.text = text
+            delete this.body.text
+        }
+        else
+            this.body.text = text
         return this
     }
 
-    public setImageAttachment(url: string) {
-        this.attachment.image_url = url
+    addAttachment(data: MessengerAttachment) {
+        if (this.attachment.payload.template_type != "template")
+            this.body.attachment.payload = {
+                template_type: "generic",
+                elements: []
+            }
+
+        let formatButton = this.copyCleanObject(data.buttons)
+        formatButton.forEach(e => e["type"] = "postback")
+        this.body.attachment.payload.elements.push(this.copyCleanObject(data, { buttons: formatButton }))
         return this
     }
 
-    setTitleAttachment(title: string) {
-        this.attachment.title = title
-        return this
+    addButton(data: ResponseMessengerButton) {
+        let button = this.copyCleanObject(data)
+        if (button.url) {
+            button["type"] = "web_url"
+            delete button.payload
+        }
+        else if (button.payload) {
+            button["type"] = "postback"
+            delete button.url
+        } else return
+
+        if (this.attachment.payload.template_type != "button")
+            this.body.attachment.payload = {
+                template_type: "button",
+            }
+        this.body.attachment.payload.buttons = this.body.attachment.payload.buttons || []
+        this.body.attachment.payload.buttons.push(button)
     }
 
-    setSubtitleAttachment(subtitle: string) {
-        this.attachment.subtitle = subtitle
+    addQuickButton(data: QuickRepliesButton) {
+        this.body.quick_replies = this.body.quick_replies || []
+        this.body.quick_replies.push(this.copyCleanObject(data, { content_type: "text" }))
         return this
-    }
-
-    addButton(title: string, payload: string) {
-        let buttons = this.attachment.buttons = this.attachment.buttons || [];
-        buttons.push({
-            type: "postback",
-            title: title,
-            payload: payload
-        })
     }
 
     public build(psid: string) {
@@ -56,30 +69,39 @@ export class MessengerBuilder {
             recipient: {
                 id: psid
             },
+            messaging_type: "RESPONSE",
             message: this.body
         }
         console.log(JSON.stringify(ret))
         return ret
     }
 
-    private get attachment() {
-        return this.elements[this.elements.length - 1]
+    private copyCleanObject<T>(o: T, bonus = {}) {
+        if (typeof o !== 'object')
+            return o
+
+        let f = (o, key, value) => {
+            if (o[key] == null)
+                o[key] = value
+        }
+
+        let r = { ...bonus }
+        for (let key in o)
+            if (o[key] != null)
+                f(r, key, this.copyCleanObject(o[key]))
+
+        if (Array.isArray(o))
+            r = Object.values(r)
+
+        return r as T
     }
 
-    private get elements() {
-        if (!this.body.attachment) {
+    private get attachment() {
+        if (!this.body.attachment)
             this.body.attachment = {
                 type: "template",
-                payload: {
-                    template_type: "generic",
-                    elements: [{}]
-                }
+                payload: {}
             }
-        }
-        return this.body.attachment.payload.elements
-    }
-
-    private putNext() {
-        this.elements[this.elements.length] = {}
+        return this.body.attachment
     }
 }
