@@ -12,6 +12,7 @@ import { AppConfigModule, APP_ENV_CONFIG } from "./lib/app-config";
 import { CloudinaryModule } from "./lib/cloudinary";
 import { MongoIdGeneratorModule } from "./lib/database/mongo";
 import { PostModule } from "./post";
+import { Q8AModule } from "./q8a";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -40,6 +41,7 @@ import { PostModule } from "./post";
         }),
         ChatbotModule,
         PostModule,
+        Q8AModule,
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],
