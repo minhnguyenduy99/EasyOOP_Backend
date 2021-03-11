@@ -94,6 +94,7 @@ export class AggregateBuilder {
             single = true,
             pipeline = [],
             mergeObject = false,
+            outer = true,
         } = option;
         let from;
         if (typeof _from !== "string") {
@@ -128,21 +129,47 @@ export class AggregateBuilder {
             ],
             as,
         };
-        let $replaceRoot = null;
+        let replaceRoot = null,
+            innerMatch = null,
+            removeLookupField = null;
         const mergeObj = {
             [localField]: { $arrayElemAt: [`$${as}`, 0] },
         };
-        if (single) {
-            $replaceRoot = {
-                newRoot: {
-                    $mergeObjects: [
-                        "$$ROOT",
-                        mergeObject ? mergeObj[localField] : mergeObj,
-                    ],
+        if (!outer) {
+            innerMatch = {
+                $match: {
+                    [as]: { $ne: [] },
                 },
             };
         }
-        this._aggregates.push({ $lookup }, { $replaceRoot });
+        if (single) {
+            replaceRoot = {
+                $replaceRoot: {
+                    newRoot: {
+                        $mergeObjects: [
+                            "$$ROOT",
+                            mergeObject ? mergeObj[localField] : mergeObj,
+                        ],
+                    },
+                },
+            };
+            if (mergeObject) {
+                removeLookupField = {
+                    $project: {
+                        [as]: 0,
+                    },
+                };
+            }
+        }
+        const lookupAggregates = [
+            { $lookup },
+            { ...(outer || innerMatch) },
+            { ...(single && replaceRoot) },
+            { ...(single && mergeObject && removeLookupField) },
+        ].filter((stage) => Object.keys(stage).length !== 0);
+
+        this._aggregates.push(...lookupAggregates);
+
         this._chains.push(this.lookup);
         return this;
     }

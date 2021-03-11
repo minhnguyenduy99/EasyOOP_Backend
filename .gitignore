@@ -40,3 +40,7 @@ lerna-debug.log*
 *.env
 
 ngrok.exe
+
+samples
+
+config

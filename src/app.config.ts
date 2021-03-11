@@ -7,7 +7,7 @@ export const APP_CONFIG_KEY = {
     PUBLIC_FOLDER: "PUBLIC_FOLDER",
     HTTPS: "HTTPS",
     FIREBASE_CONFIG_FILE: "FIREBASE_FILENAME",
-    CLOUDINARY_URL: "CLOUDINARY_URI",
+    CLOUDINARY_URL: "CLOUDINARY_URL",
 };
 
 // Get the value from environment and set it to a variable

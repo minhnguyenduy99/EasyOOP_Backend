@@ -3,3 +3,4 @@ export * from "./interceptors";
 export * from "./validation";
 export * from "./serializers";
 export * from "./class-validator";
+export * from "./transformers";
