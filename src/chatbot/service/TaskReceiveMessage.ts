@@ -1,5 +1,4 @@
-import { MessengerBuilder } from "../helpers";
-import { BaseMessageHandler } from "./BaseMessageHandler";
+import { BaseMessageHandler } from ".";
 import { TaskHelpMessage } from "./task";
 
 export class TaskReceiveMessage extends BaseMessageHandler {

@@ -1,4 +1,4 @@
-import { BaseHandler } from "./BaseHandler";
+import { BaseHandler } from ".";
 import { Request, Response } from "express";
 import { HTTP_CODES } from "../helpers";
 import { Logger } from "@nestjs/common";
