@@ -14,7 +14,7 @@ export abstract class BaseModelSerializer extends BaseSerializer<Document> {
     public __v: any;
 
     constructor(partial: Partial<Document>, options?: ToObjectOptions) {
-        const toObject = partial.toObject ?? (() => partial);
-        super(toObject(options));
+        const toObject = partial?.toObject ?? (() => partial);
+        super(toObject(options ?? {}));
     }
 }

@@ -13,6 +13,7 @@ import { CloudinaryModule } from "./lib/cloudinary";
 import { MongoIdGeneratorModule } from "./lib/database/mongo";
 import { PostModule } from "./post";
 import { Q8AModule } from "./q8a";
+import { MenuModule } from "./menu";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -42,6 +43,7 @@ import { Q8AModule } from "./q8a";
         ChatbotModule,
         PostModule,
         Q8AModule,
+        MenuModule,
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],
