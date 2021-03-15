@@ -1,5 +1,5 @@
 import { HTTP_CODES } from "../helpers";
-import { BaseTaskHandler } from "./BaseTaskHandler";
+import { BaseTaskHandler } from "../service";
 
 export class Subcriber extends BaseTaskHandler {
     handler() {
