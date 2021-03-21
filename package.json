@@ -42,7 +42,8 @@
     "remove-accents": "^0.4.2",
     "request": "^2.88.2",
     "rimraf": "^3.0.2",
-    "rxjs": "^6.6.6"
+    "rxjs": "^6.6.6",
+    "vntk": "^1.4.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^7.5.6",

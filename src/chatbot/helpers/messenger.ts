@@ -36,11 +36,15 @@ export class Messenger {
 
     handler() {
         let task;
-        if (this.webhook_event.message)
-            task = new TaskReceiveMessage(this, this.webhook_event.message);
-        else if (this.webhook_event.postback)
+        if (this.webhook_event.postback)
             task = new TaskPostBackMessage(this, this.webhook_event.postback);
+        else if (this.webhook_event.message) {
+            if (this.webhook_event.message.quick_reply)
+                task = new TaskPostBackMessage(this, this.webhook_event.message.quick_reply)
+            else
+                task = new TaskReceiveMessage(this, this.webhook_event.message);
+        }
 
-        task && task.handler();
+        task?.handler();
     }
 }
