@@ -14,6 +14,7 @@ import { MongoIdGeneratorModule } from "./lib/database/mongo";
 import { PostModule } from "./post";
 import { Q8AModule } from "./q8a";
 import { MenuModule } from "./menu";
+import { AuthFacebookModule } from "./lib/authentication/facebook";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -44,6 +45,11 @@ import { MenuModule } from "./menu";
         PostModule,
         Q8AModule,
         MenuModule,
+        AuthFacebookModule.forRoot({
+            callbackURL: "http://localhost:3000/facebook/redirect",
+            scope: "email",
+            profileFields: ["emails", "name", "displayName", "photos"],
+        }),
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],
