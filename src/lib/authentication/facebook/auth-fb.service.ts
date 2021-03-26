@@ -22,12 +22,9 @@ export class AuthFacebookService extends AuthenticationCoreService {
         protected readonly logger: Logger,
         protected readonly verifier: UserVerifier,
         protected mailVerification: MailVerification,
-        configService: ConfigService,
     ) {
         super(userModel, logger);
-        const formatter = new DetailVerificationFormatter(
-            configService.get(VERIFICATION_ENDPOINT),
-        );
+        const formatter = new DetailVerificationFormatter();
         this.mailVerification.useFormatter(formatter);
         this.verifier.useVerificationSender(this.mailVerification);
     }

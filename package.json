@@ -45,6 +45,7 @@
     "request": "^2.88.2",
     "rimraf": "^3.0.2",
     "rxjs": "^6.6.6",
+    "superagent": "^6.1.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {

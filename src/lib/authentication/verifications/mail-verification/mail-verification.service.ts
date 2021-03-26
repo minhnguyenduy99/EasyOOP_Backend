@@ -1,34 +1,25 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
+import { MailService } from "src/lib/mail-service";
 import { IVerificationSender, VerifierDTO } from "../../core";
-import { createTransport } from "nodemailer";
-import { MAIL_SERVICE_CONFIG, TRANSPORTER_CONFIG } from "./consts";
-import {
-    IHTMLFormatter,
-    MailServiceConfig,
-    TransporterConfig,
-} from "./interfaces";
+import { MAIL_SERVICE_CONFIG } from "./consts";
+import { IHTMLFormatter, MailServiceConfigOptions } from "./interfaces";
 
 @Injectable()
 export class MailVerification implements IVerificationSender {
-    private readonly transporter: any;
-    private htmlFormatter: IHTMLFormatter<VerifierDTO>;
+    private htmlFormatter: IHTMLFormatter<string>;
 
     constructor(
-        @Inject(TRANSPORTER_CONFIG) transporterConfig: TransporterConfig,
         @Inject(MAIL_SERVICE_CONFIG)
-        private readonly mailConfig: MailServiceConfig,
+        private readonly mailConfig: MailServiceConfigOptions,
+        private readonly mailService: MailService,
         private readonly logger: Logger,
-    ) {
-        this.transporter = createTransport(transporterConfig);
-        this.logger.verbose(transporterConfig, "TransporterConfig");
-        this.logger.verbose(mailConfig, "mailConfig");
-    }
+    ) {}
 
     getVerifyMethod() {
         return "email";
     }
 
-    useFormatter(formatter: IHTMLFormatter<VerifierDTO>) {
+    useFormatter(formatter: IHTMLFormatter<string>) {
         this.htmlFormatter = formatter;
     }
 
@@ -36,21 +27,17 @@ export class MailVerification implements IVerificationSender {
         if (!verifier) {
             return false;
         }
-        const htmlContent = await this.htmlFormatter?.format(verifier);
+        const verifyURL = this.generateVerificationURL(verifier);
+        const htmlContent = await this.htmlFormatter?.format(verifyURL);
         const { user } = verifier;
         this.logger.verbose("Send verification email: " + user.email);
         try {
-            let info = await this.transporter.sendMail({
-                from: "localhost:3000@email.com",
-                to: user.email,
+            let result = await this.mailService.sendEmail({
+                toEmail: user.email,
                 subject: this.mailConfig.defaultSubject,
-                html: htmlContent,
+                content: htmlContent,
             });
-            this.logger.verbose(info);
-            return {
-                code: 0,
-                data: info,
-            };
+            return result;
         } catch (err) {
             this.logger.error(err);
             return {
@@ -58,5 +45,10 @@ export class MailVerification implements IVerificationSender {
                 error: err,
             };
         }
+    }
+
+    protected generateVerificationURL(verifier: VerifierDTO) {
+        const { user_id, verify_code } = verifier;
+        return `${this.mailConfig.endpoint}?user-id=${user_id}&code=${verify_code}`;
     }
 }

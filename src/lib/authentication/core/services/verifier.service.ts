@@ -68,7 +68,6 @@ export class UserVerifier implements IUserVerifier {
                     useFindAndModify: false,
                 },
             );
-            console.log(verifier);
             const verifierDTO = {
                 ...verifier.toObject(),
                 user: user?.["toObject"]() ?? user,

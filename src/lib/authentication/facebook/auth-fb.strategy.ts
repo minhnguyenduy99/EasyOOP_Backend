@@ -11,7 +11,6 @@ export class FacebookStrategy extends PassportStrategy(Strategy, "facebook") {
         @Inject(FACEBOOK_AUTH_CONFIG) facebookAppConfig: FacebookAppConfig,
     ) {
         super(facebookAppConfig);
-        console.log(facebookAppConfig);
     }
 
     async validate(
@@ -20,7 +19,6 @@ export class FacebookStrategy extends PassportStrategy(Strategy, "facebook") {
         profile: Profile,
         done: DoneHandler,
     ) {
-        console.log(profile);
         done(null, profile);
     }
 }
