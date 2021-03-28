@@ -1,5 +1,6 @@
 import { BayesClassifier } from "vntk"
 import { readFile } from "fs"
+import { simply } from ".";
 
 interface ClassifierDTO {
     label: string
@@ -7,12 +8,26 @@ interface ClassifierDTO {
 }
 
 export class Classifier extends BayesClassifier {
-    public getClassifications(observation): ClassifierDTO {
-        let ret = super["getClassifications"](super["textToFeatures"](observation))
-        if (ret.length >= 2) {
-            ret[0].value = ret[0].value / ret[1].value
+    public getClassifications(observation: string, limitOrThreshold?: number): ClassifierDTO[] {
+        let ret = super["getClassifications"](super["textToFeatures"](simply(observation)))
+        let total = 0;
+        let len = ret.length
+        for (let i = 0; i < len; i++) {
+            ret[i].value /= ret[len - 1].value
+            total += ret[i].value
         }
-        return ret[0]
+        for (let i = 0; i < len; i++)
+            ret[i].value /= total
+        if (limitOrThreshold == null)
+            return ret;
+
+        limitOrThreshold = Math.min(limitOrThreshold, len)
+        if (limitOrThreshold >= 1)
+            ret.length = limitOrThreshold
+        else
+            while (ret.length > 0 && ret[ret.length - 1].value < limitOrThreshold)
+                ret.pop()
+        return ret;
     }
 
     public load(path: string, callback = undefined) {
