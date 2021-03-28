@@ -1,9 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import { EncryptService } from "src/lib/encrypt";
 import {
-    AuthenticationCoreService,
+    BaseAuthUserService,
     AuthUser,
     UserProfileDTO,
     AuthUserDTO,
@@ -11,22 +11,26 @@ import {
 } from "../core";
 import { DetailVerificationFormatter } from "../helpers";
 import { MailVerification } from "../verifications/mail-verification";
-import { VERIFICATION_ENDPOINT } from "./consts";
 import { FacebookUser } from "./interfaces";
 
 @Injectable()
-export class AuthFacebookService extends AuthenticationCoreService {
+export class FacebookUserService extends BaseAuthUserService {
     constructor(
         @InjectModel(AuthUser.name)
-        protected readonly userModel: Model<AuthUser>,
-        protected readonly logger: Logger,
+        readonly userModel: Model<AuthUser>,
+        readonly encryptService: EncryptService,
+        readonly logger: Logger,
         protected readonly verifier: UserVerifier,
         protected mailVerification: MailVerification,
     ) {
-        super(userModel, logger);
+        super(userModel, encryptService, logger);
         const formatter = new DetailVerificationFormatter();
         this.mailVerification.useFormatter(formatter);
         this.verifier.useVerificationSender(this.mailVerification);
+    }
+
+    getUserType() {
+        return "facebook";
     }
 
     async createUser(dto: any) {

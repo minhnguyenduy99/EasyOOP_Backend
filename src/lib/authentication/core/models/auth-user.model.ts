@@ -17,6 +17,12 @@ export class AuthUser extends Document {
 
     @Prop({
         required: false,
+        default: false,
+    })
+    password_required: boolean;
+
+    @Prop({
+        required: false,
         default: null,
     })
     password?: string;
@@ -36,6 +42,15 @@ export class AuthUser extends Document {
         default: false,
     })
     is_active?: boolean;
+
+    @Prop()
+    login_status: number;
+
+    @Prop()
+    hash_refresh_token: string;
+
+    @Prop()
+    token_expired: number;
 
     @Prop({
         type: Object,

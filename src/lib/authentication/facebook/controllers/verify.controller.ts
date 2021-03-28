@@ -8,16 +8,16 @@ import {
     UseInterceptors,
 } from "@nestjs/common";
 import { UserVerifier } from "../../core";
-import { AuthFacebookService } from "../auth-fb.service";
+import { FacebookUserService } from "../auth-fb.service";
 
-@Controller("/verify")
+@Controller("auth")
 export class UserVerifyController {
     constructor(
         private readonly verifyService: UserVerifier,
-        private readonly fbAuthService: AuthFacebookService,
+        private readonly fbAuthService: FacebookUserService,
     ) {}
 
-    @Get()
+    @Get("/verify")
     async verify(@Query("code") code: string) {
         const result = await this.verifyService.verify(code);
         return result;
@@ -26,7 +26,7 @@ export class UserVerifyController {
     @Get("/resend")
     @UseInterceptors(ClassSerializerInterceptor)
     async resendVerification(@Query("user-id") userId: string) {
-        const user = await this.fbAuthService.findUserById(userId);
+        const user = await this.fbAuthService.getUserById(userId);
         if (!user) {
             throw new NotFoundException({
                 code: 404,

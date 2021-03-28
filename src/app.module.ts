@@ -45,11 +45,7 @@ import { AuthFacebookModule } from "./lib/authentication/facebook";
         PostModule,
         Q8AModule,
         MenuModule,
-        AuthFacebookModule.forRoot({
-            callbackURL: "http://localhost:3000/facebook/redirect",
-            scope: "email",
-            profileFields: ["emails", "name", "displayName", "photos"],
-        }),
+        AuthFacebookModule,
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],

@@ -30,13 +30,13 @@ export class MailVerification implements IVerificationSender {
         const verifyURL = this.generateVerificationURL(verifier);
         const htmlContent = await this.htmlFormatter?.format(verifyURL);
         const { user } = verifier;
-        this.logger.verbose("Send verification email: " + user.email);
         try {
             let result = await this.mailService.sendEmail({
                 toEmail: user.email,
                 subject: this.mailConfig.defaultSubject,
                 content: htmlContent,
             });
+            this.logger.verbose("Send verification email: " + user.email);
             return result;
         } catch (err) {
             this.logger.error(err);

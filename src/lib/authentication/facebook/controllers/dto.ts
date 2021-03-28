@@ -9,5 +9,8 @@ export class AuthUserDTO extends BaseModelSerializer {
     password: string;
 
     @Exclude()
+    password_required: boolean;
+
+    @Exclude()
     type: string;
 }

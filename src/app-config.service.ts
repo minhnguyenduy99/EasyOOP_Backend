@@ -8,7 +8,7 @@ export class AppConfigService implements IAppConfig, IAppEnvironmentConfig {
     protected protocol: string;
 
     constructor(private readonly configService: ConfigService) {
-        this.protocol = this.isHTTPS ? "https" : "http";
+        this.protocol = this.isHTTPS() ? "https" : "http";
     }
 
     configDir(): string {
@@ -20,7 +20,7 @@ export class AppConfigService implements IAppConfig, IAppEnvironmentConfig {
     }
 
     serverDomain() {
-        return `${this.protocol}://${this.host}:${this.port}`;
+        return `${this.protocol}://${this.host()}:${this.port()}`;
     }
 
     publicURL() {
