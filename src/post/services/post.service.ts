@@ -3,18 +3,22 @@ import { InjectModel } from "@nestjs/mongoose";
 import { EventEmitter2 } from "eventemitter2";
 import { Model, Types } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
+import { TAG_TYPES } from "../consts";
 import {
     CommitActionResult,
     CreatePostDTO,
     LimitOptions,
     PaginatedResult,
+    PostDTO,
     SortOptions,
+    TagResult,
     UpdatePostDTO,
 } from "../dtos";
 import { POST_EVENTS } from "../events";
 import { BaseLimiter, PostFilter, PostFilterOptions } from "../helpers";
 import { Post, PostMetadata, Topic } from "../models";
 import { PostMetadataService } from "./post-metadata.service";
+import { Tag, TagType } from "src/tag";
 
 export interface IPostService {
     createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>>;
@@ -33,6 +37,7 @@ export interface IPostService {
         limit?: LimitOptions,
         sort?: SortOptions,
     ): Promise<any>;
+    getPostsByTag(tag: string[], limit?: LimitOptions): Promise<PostDTO[]>;
     deletePost(postId: string): Promise<CommitActionResult<void>>;
 }
 
@@ -41,6 +46,7 @@ export class PostService implements IPostService {
     constructor(
         @InjectModel(Post.name) private postModel: Model<Post>,
         @InjectModel(Topic.name) private topicModel: Model<Topic>,
+        @InjectModel(Tag.name) private tagModel: Model<Tag>,
         @InjectModel(PostMetadata.name)
         private postMetadataModel: Model<PostMetadata>,
         private postMetadataService: PostMetadataService,
@@ -225,6 +231,65 @@ export class PostService implements IPostService {
         }
         firstPost = firstPost[0];
         return [firstPost].concat(nextPosts);
+    }
+
+    async getPostsByTag(
+        tagIds: string[],
+        limit?: LimitOptions,
+        queryOptions: { withMeta: boolean } = {
+            withMeta: true,
+        },
+    ) {
+        const builder = new AggregateBuilder();
+        builder
+            .match({
+                tags: {
+                    $all: tagIds,
+                },
+            })
+            .aggregate({
+                $lookup: {
+                    from: this.tagModel.collection.name,
+                    as: "tags",
+                    let: {
+                        tags: "$tags",
+                    },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $in: ["$tag_id", "$$tags"],
+                                },
+                            },
+                        },
+                    ],
+                },
+            });
+        if (queryOptions.withMeta) {
+            builder.lookup({
+                from: this.postMetadataModel,
+                localField: "post_metadata_id",
+                foreignField: "_id",
+                as: "post_metadata_id",
+                single: true,
+                removeFields: ["__v", "_id"],
+                mergeObject: true,
+            });
+        }
+        limit = limit ?? {
+            start: 0,
+            limit: 10,
+        };
+        builder.limit(limit as any);
+        const queriedResult = await this.postModel.aggregate(builder.build());
+        const [{ results }] = queriedResult;
+
+        return new (TagResult(PostDTO))(
+            {
+                tag_id: tagIds,
+            },
+            results,
+        );
     }
 
     async deletePost(postId: string) {

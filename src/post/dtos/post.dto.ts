@@ -7,8 +7,8 @@ import {
 } from "src/lib/helpers";
 import { SerializerOptions } from "src/lib/helpers/serializers/base-pagination.serializer";
 import { FormFile } from "src/lib/types";
-import { Topic } from "../models";
 import { PostMetadataDTO } from "./post-metadata.dto";
+import { TagDTO } from "src/tag";
 
 export class CreatePostDTO {
     @IsNotEmpty()
@@ -70,7 +70,12 @@ export class PostDTO extends BaseModelSerializer {
     }
     post_title: string;
 
-    @Type(() => PostMetadataDTO)
+    @Type(({ object, property }) => {
+        if (object[property] instanceof PostMetadataDTO) {
+            return PostMetadataDTO;
+        }
+        return String;
+    })
     post_metadata_id: any;
 
     @Transform(({ value }) => value?.toString())
@@ -81,6 +86,9 @@ export class PostDTO extends BaseModelSerializer {
 
     @Transform(({ value }) => value?.toString())
     previous_post_id: string;
+
+    @Type(() => TagDTO)
+    tags: TagDTO[];
 }
 
 export class DetailedPostDTO extends PostDTO {

@@ -3,11 +3,13 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { remove as removeAccents } from "remove-accents";
 import { AggregateBuilder } from "src/lib/database/mongo";
+import { Tag } from "src/tag";
 import {
     CommitActionResult,
     LimitOptions,
     CreateQ8ADTO,
     UpdateQ8ADTO,
+    Q8ADTO,
 } from "../dtos";
 import { Q8AModel } from "../models";
 
@@ -19,6 +21,7 @@ export interface IQ8AService {
     ): Promise<CommitActionResult<Q8AModel>>;
     getQ8AById(id: string): Promise<Q8AModel>;
     getListQ8As(keyword: string, limitOptions?: LimitOptions): Promise<any>;
+    getQ8AByTag(tagId: string): Promise<Q8ADTO>;
 }
 
 @Injectable()
@@ -26,6 +29,8 @@ export class Q8AService implements IQ8AService {
     constructor(
         @InjectModel(Q8AModel.name)
         private q8aModel: Model<Q8AModel>,
+        @InjectModel(Tag.name)
+        private tagModel: Model<Tag>,
     ) {}
 
     async createQ8A(input: CreateQ8ADTO) {
@@ -80,6 +85,38 @@ export class Q8AService implements IQ8AService {
                 error: err,
             };
         }
+    }
+
+    async getQ8AByTag(tagId: string) {
+        const builder = new AggregateBuilder();
+        builder
+            .match({
+                tag_id: tagId,
+            })
+            .lookup({
+                from: this.tagModel.collection.name,
+                localField: "tag_id",
+                foreignField: "tag_id",
+                as: "tag",
+                pipeline: [
+                    {
+                        $match: {
+                            tag_type: "question",
+                        },
+                    },
+                ],
+                mergeObject: true,
+                single: true,
+                removeFields: ["__v", "_id"],
+            });
+        const queriedResult = await this.q8aModel.aggregate(
+            builder.log(null).build(),
+        );
+        const [result] = queriedResult;
+        if (!result) {
+            return null;
+        }
+        return new Q8ADTO(result);
     }
 
     async getQ8AById(id: string): Promise<Q8AModel> {

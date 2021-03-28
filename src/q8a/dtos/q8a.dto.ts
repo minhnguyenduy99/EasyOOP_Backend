@@ -25,6 +25,10 @@ export class Q8ADTO extends BaseModelSerializer {
     @Exclude()
     unaccented_question: string;
 
+    tag_value?: string;
+    tag_id: string;
+    tag_type?: string;
+
     @Expose({
         name: "qa_id",
     })

@@ -17,6 +17,11 @@ export class Q8AModel extends Document {
         required: true,
     })
     answer: string;
+
+    @Prop({
+        required: true,
+    })
+    tag_id: string;
 }
 
 export const Q8ASchema = SchemaFactory.createForClass(Q8AModel);

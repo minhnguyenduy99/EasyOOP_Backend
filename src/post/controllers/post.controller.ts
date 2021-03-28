@@ -19,7 +19,11 @@ import {
     QueryValidationPipe,
     UseFormData,
 } from "src/lib/helpers";
-import { IPaginator, PaginatorFactory } from "src/lib/pagination";
+import {
+    IPaginator,
+    PaginatorFactory,
+    ParsePagePipe,
+} from "src/lib/pagination";
 import {
     CreatePostDTO,
     DetailedPostDTO,
@@ -121,6 +125,23 @@ export class PostController {
             throw new NotFoundException("Post not found");
         }
         return new DetailedPostDTO(post);
+    }
+
+    @Get("/tags/search")
+    @UseInterceptors(ClassSerializerInterceptor)
+    async getPostsByTag(
+        @Query("tags")
+        tagStr: string,
+        @Query("page", ParsePagePipe)
+        page: number,
+    ) {
+        const limit = {
+            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
+            limit: this.DEFAULT_PAGE_SIZE,
+        };
+        const tags = tagStr.trim().split(",");
+        const result = await this.postService.getPostsByTag(tags, limit);
+        return result;
     }
 
     // @Put("/:post_id")

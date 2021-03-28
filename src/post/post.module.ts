@@ -16,6 +16,7 @@ import {
 import { PostService, TopicService } from "./services";
 import { PostMetadataService } from "./services/post-metadata.service";
 import { PostEvents } from "./events";
+import { TagModule } from "src/tag";
 
 @Module({
     imports: [
@@ -29,6 +30,7 @@ import { PostEvents } from "./events";
             folder: "POSTS",
         }),
         EventEmitterModule,
+        TagModule,
     ],
     providers: [
         {

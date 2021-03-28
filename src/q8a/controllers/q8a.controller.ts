@@ -87,6 +87,12 @@ export class Q8AController {
         return new Q8ADTO(result.toObject());
     }
 
+    @Get("/tag/:tag_id")
+    async getQ8AByTag(@Param("tag_id") tagId: string) {
+        const result = await this.q8aService.getQ8AByTag(tagId);
+        return result;
+    }
+
     @Get("/search/:page")
     async searchQ8A(
         @Query("q") keyword: string,

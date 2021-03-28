@@ -29,6 +29,12 @@ export class Post extends Document {
     topic_id?: string;
 
     @Prop({
+        required: true,
+        type: [String],
+    })
+    tags: string[];
+
+    @Prop({
         required: false,
         type: Types.ObjectId,
         default: null,
@@ -55,4 +61,8 @@ PostSchema.index({
 
 PostSchema.index({
     post_type: 1,
+});
+
+PostSchema.index({
+    tags: 1,
 });
