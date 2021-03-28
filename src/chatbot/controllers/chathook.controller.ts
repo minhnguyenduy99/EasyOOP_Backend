@@ -1,14 +1,19 @@
 import { Controller, Get, Logger, Post, Req } from "@nestjs/common";
 import { Request } from "express";
+import { MenuService } from "src/menu";
 import { HTTP_CODES, Messenger } from "../helpers";
+import { default as CacheService } from "../helpers/CacheService";
 import { Subcriber } from "../service/subscriber";
 
 @Controller("/chatwebhook")
 export class ChatHookController {
-    constructor(private readonly Log: Logger) {}
+    constructor(private readonly Log: Logger, private readonly menuService: MenuService) {
+        CacheService.menuService = menuService
+    }
 
     @Post()
     posFanpageChatBotWebHook(@Req() req: Request) {
+
         const body = req.body;
         const res = req.res;
         if (body.object === "page") {
