@@ -1,5 +1,6 @@
-import { QuickRepliesMessengerDTO } from "src/chatbot/dto";
-import { QuickRepliesMessenger, SimpleText } from "src/chatbot/helpers";
+import { AttachmentElement, QuickRepliesMessengerDTO } from "src/chatbot/dto";
+import { CacheService, GenericMessenger, QuickRepliesMessenger, SimpleText } from "src/chatbot/helpers";
+import { AnswerDTO } from "src/chatbot/integration/dto";
 import { NLP, Label } from "src/lib/nlp";
 import { BaseMessageHandler } from "..";
 
@@ -17,17 +18,48 @@ export class TaskTopic extends BaseMessageHandler {
             return
         }
 
-        let topics = NLP.topic.getClassifications(this.body, askThreshold)
-        if ((topics.length > 0 && topics[0].value >= trustThreshold) || topics.length == 1) {
-            this.handlerTrusted(topics[0].label, this.type)
-            return
-        }
-
-        this.handlerUntrusted(topics)
+        NLP.topic.getClassifications(this.body, askThreshold).then(topics => {
+            if ((topics.length > 0 && topics[0].value >= trustThreshold) || topics.length == 1) {
+                this.handlerTrusted(topics[0].label, this.type)
+                return
+            }
+            this.handlerUntrusted(topics)
+        })
     }
 
-    private handlerTrusted(topic, type) {
-        this.msg.reply(new SimpleText({ text: `request topic: ${topic}, type: ${type}` }))
+    private handlerTrusted(topic: string, type: string) {
+        if (type == "definition")
+            type = "question"
+        else if (type == "example")
+            type = "post"
+        this.Log.debug({ type: type, value: topic });
+
+
+        CacheService.integrationService.getResultByTag({ type: type, value: topic }).then((ret) => {
+            if (ret.length == 0)
+                this.msg.reply(new SimpleText({ text: `Xin lỗi, bạn hỏi khó quá, thử cái khác đi` }))
+            else if (ret.length == 1 && ret[0].url == null)
+                this.msg.reply(new SimpleText({ text: ret[0].text }))
+            else {
+                let rep = [] as AttachmentElement[]
+                ret.forEach(e => {
+                    let p = {
+                        title: e.title || this.msg.text,
+                        subtitle: e.text
+                    } as AttachmentElement
+                    if (e.image) {
+                        p.image_url = e.image
+                        if (e.url)
+                            p.default_action = {
+                                url: e.url,
+                                webview_height_ratio: "FULL"
+                            }
+                    }
+                    rep.push(p);
+                })
+                this.msg.reply(new GenericMessenger(rep))
+            }
+        })
     }
 
     private handlerUntrusted(topics) {

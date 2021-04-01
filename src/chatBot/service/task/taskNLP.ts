@@ -7,8 +7,9 @@ export class TaskNLP extends BaseMessageHandler {
     static flow = {}
 
     handler() {
-        let ret = NLP.type.getClassifications(this.body)[0];
-        this.getTaskByLabel(ret.label).handler();
+        NLP.type.getClassifications(this.body).then((ret) => {
+            this.getTaskByLabel(ret[0].label).handler();
+        })
         // this.msg.reply(new SimpleText({ text: `you mean ${ret.label} right?` }))
     }
 

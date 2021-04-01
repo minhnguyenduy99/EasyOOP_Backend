@@ -23,7 +23,7 @@ export class ChatHookController {
         readonly integration: IntegrationService,
     ) {
         CacheService.menuService = menuService;
-        CacheService["integration"] = integration;
+        CacheService.integrationService = integration;
     }
 
     @Post()

@@ -6,21 +6,22 @@ import { TaskPostBackMessage, TaskReceiveMessage } from "../service";
 export class Messenger {
     protected webhook_event: any; // an entry of "entry" obj return from webhook
     protected psid: string;
+    public text: string;
 
     constructor(webhook_event, protected Log: Logger = new Logger()) {
         //cache
         this.webhook_event = webhook_event;
         //parse
         this.psid = this.webhook_event.sender.id;
-
+        this.text = this.webhook_event.message.text.trim().toLowerCase();
         //debug
-        this.Log.log(this.webhook_event, `sender id: ${this.psid}`);
+        this.Log.debug(this.webhook_event, `sender id: ${this.psid}`);
     }
 
     reply(msg: ResponseMessenger, call_back = undefined) {
         let data = msg.pack()
         data.recipient = { id: this.psid }
-        this.Log.log(data, "reply")
+        this.Log.debug(data, "reply")
         post(
             {
                 uri: process.env.FACEBOOK_HOOK_URI,

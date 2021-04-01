@@ -8,7 +8,7 @@ interface ClassifierDTO {
 }
 
 export class Classifier extends BayesClassifier {
-    public getClassifications(observation: string, limitOrThreshold?: number): ClassifierDTO[] {
+    public getClassificationsAsync(observation: string, limitOrThreshold?: number): ClassifierDTO[] {
         let ret = super["getClassifications"](super["textToFeatures"](simply(observation)))
         let total = 0;
         let len = ret.length
@@ -28,6 +28,10 @@ export class Classifier extends BayesClassifier {
             while (ret.length > 0 && ret[ret.length - 1].value < limitOrThreshold)
                 ret.pop()
         return ret;
+    }
+
+    public async getClassifications(observation: string, limitOrThreshold?: number) {
+        return this.getClassificationsAsync(observation, limitOrThreshold)
     }
 
     public load(path: string, callback = undefined) {
