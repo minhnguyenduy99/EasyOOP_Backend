@@ -36,7 +36,7 @@ export class MenuService {
             tag_id: tagId,
         });
         if (!menu) {
-            return [];
+            return null;
         }
         const childrenMenu = await this.menuModel.find({
             parent_menu: menu._id,

@@ -1,19 +1,33 @@
-import { Controller, Get, Logger, Post, Req } from "@nestjs/common";
+import {
+    Controller,
+    Get,
+    Logger,
+    Param,
+    Post,
+    Req,
+    Query,
+} from "@nestjs/common";
 import { Request } from "express";
 import { MenuService } from "src/menu";
 import { HTTP_CODES, Messenger } from "../helpers";
 import { default as CacheService } from "../helpers/CacheService";
+import { IntegrationService } from "../integration";
+import { Question } from "../integration/dto";
 import { Subcriber } from "../service/subscriber";
 
 @Controller("/chatwebhook")
 export class ChatHookController {
-    constructor(private readonly Log: Logger, private readonly menuService: MenuService) {
-        CacheService.menuService = menuService
+    constructor(
+        private readonly Log: Logger,
+        readonly menuService: MenuService,
+        readonly integration: IntegrationService,
+    ) {
+        CacheService.menuService = menuService;
+        CacheService["integration"] = integration;
     }
 
     @Post()
     posFanpageChatBotWebHook(@Req() req: Request) {
-
         const body = req.body;
         const res = req.res;
         if (body.object === "page") {
@@ -30,6 +44,11 @@ export class ChatHookController {
         } else {
             res.sendStatus(HTTP_CODES.NOT_FOUND);
         }
+    }
+
+    @Get("/test/result-by-tag")
+    getResults(@Query() question: Question) {
+        return this.integration.getResultByTag(question);
     }
 
     @Get()
