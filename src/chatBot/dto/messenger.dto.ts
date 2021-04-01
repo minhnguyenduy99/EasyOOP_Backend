@@ -23,7 +23,7 @@ export interface AttachmentElement {
 
 interface QuickRepliesButton {
     title: string
-    payload: string
+    payload: string | object
     image_url?: string
 }
 
@@ -32,7 +32,7 @@ interface MessengerButton {
 
     url?: string
 
-    payload?: string
+    payload?: string | object
     image_url?: string
 }
 

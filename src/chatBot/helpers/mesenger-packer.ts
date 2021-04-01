@@ -40,12 +40,22 @@ export abstract class ResponseMessenger {
     }
 }
 
-abstract class ButtonAbleMessenger extends ResponseMessenger {
+abstract class FixPayloadMessenger extends ResponseMessenger {
+    protected fixPayload(payload) {
+        if (typeof payload !== "string")
+            payload = JSON.stringify(payload)
+        return payload
+    }
+}
+
+abstract class ButtonAbleMessenger extends FixPayloadMessenger {
     protected updateButton(button) {
         if (button.url)
             button.type = "web_url"
-        else if (button.payload)
+        else if (button.payload) {
             button.type = "postback"
+            button.payload = this.fixPayload(button.payload)
+        }
         return button
     }
 }
@@ -63,7 +73,7 @@ export class SimpleText extends ResponseMessenger {
 
 }
 
-export class QuickRepliesMessenger extends ResponseMessenger {
+export class QuickRepliesMessenger extends FixPayloadMessenger {
     constructor(protected data: QuickRepliesMessengerDTO) {
         super(data)
     }
@@ -75,6 +85,7 @@ export class QuickRepliesMessenger extends ResponseMessenger {
             quick_replies: []
         }
         this.data.buttons.forEach(e => { ret.message.quick_replies.push(this.copyCleanObject(e, { content_type: "text" })) })
+        ret.message.quick_replies.forEach(e => e.payload = this.fixPayload(e.payload))
         return ret
     }
 }
