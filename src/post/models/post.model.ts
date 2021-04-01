@@ -1,13 +1,23 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 import { PostMetadata } from "./post-metadata.model";
+import { GenerateDigitID } from "../helpers";
 
 @Schema()
 export class Post extends Document {
+    @Prop()
+    post_id: string;
+
     @Prop({
         required: true,
     })
     post_title: string;
+
+    @Prop({
+        required: true,
+        default: 1,
+    })
+    post_status: number;
 
     @Prop({
         type: Types.ObjectId,
@@ -15,6 +25,12 @@ export class Post extends Document {
         required: true,
     })
     post_metadata_id: string;
+
+    @Prop({
+        type: Number,
+        default: Date.now(),
+    })
+    created_date: number;
 
     @Prop({
         required: true,
@@ -51,6 +67,22 @@ export class Post extends Document {
 
 export const PostSchema = SchemaFactory.createForClass(Post);
 
+PostSchema.pre("save", function (next) {
+    if (this.isNew) {
+        this.post_id = GenerateDigitID(10);
+    }
+    next();
+});
+
+PostSchema.index({
+    post_id: 1,
+});
+
+PostSchema.index({
+    post_status: 1,
+    post_id: 1,
+});
+
 PostSchema.index({
     post_title: "text",
 });
@@ -60,9 +92,9 @@ PostSchema.index({
 });
 
 PostSchema.index({
-    post_type: 1,
+    tags: 1,
 });
 
 PostSchema.index({
-    tags: 1,
+    created_date: -1,
 });

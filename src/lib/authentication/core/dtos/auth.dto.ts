@@ -1,5 +1,6 @@
 export interface CreateUserDTO {
     accountType: string;
+    isActive?: boolean;
     // for future use
     [key: string]: any;
 }

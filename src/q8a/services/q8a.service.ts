@@ -109,9 +109,7 @@ export class Q8AService implements IQ8AService {
                 single: true,
                 removeFields: ["__v", "_id"],
             });
-        const queriedResult = await this.q8aModel.aggregate(
-            builder.log(null).build(),
-        );
+        const queriedResult = await this.q8aModel.aggregate(builder.build());
         const [result] = queriedResult;
         if (!result) {
             return null;

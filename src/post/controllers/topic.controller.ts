@@ -16,6 +16,8 @@ import {
     MongoObjectIdValidator,
     ParamValidationPipe,
     QueryValidationPipe,
+    ResponseSerializerInterceptor,
+    Serialize,
 } from "src/lib/helpers";
 import {
     CreateTopicDTO,
@@ -26,7 +28,7 @@ import {
 import { TopicService } from "../services";
 
 @Controller("/topics")
-@UseInterceptors(ClassSerializerInterceptor)
+@UseInterceptors(ResponseSerializerInterceptor)
 export class TopicController {
     constructor(private topicService: TopicService) {}
 
@@ -71,6 +73,7 @@ export class TopicController {
     }
 
     @Get("/search")
+    @Serialize(TopicDTO)
     async getTopic(@Query(QueryValidationPipe) query: TopicQueryDTO) {
         const { search, ...limit } = query;
         const { results } = await this.topicService.searchTopic(search, limit);

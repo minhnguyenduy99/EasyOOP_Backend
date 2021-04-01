@@ -30,4 +30,20 @@ export class MenuService {
             childrenMenu.map((menu) => new MenuDTO(menu.toObject())),
         );
     }
+
+    async getMenusByTag(tagId: string) {
+        const menu = await this.menuModel.findOne({
+            tag_id: tagId,
+        });
+        if (!menu) {
+            return [];
+        }
+        const childrenMenu = await this.menuModel.find({
+            parent_menu: menu._id,
+        });
+        return new MenuDTO(
+            menu?.toObject(),
+            childrenMenu.map((menu) => new MenuDTO(menu.toObject())),
+        );
+    }
 }

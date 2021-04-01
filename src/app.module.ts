@@ -15,6 +15,7 @@ import { PostModule } from "./post";
 import { Q8AModule } from "./q8a";
 import { MenuModule } from "./menu";
 import { AuthFacebookModule } from "./lib/authentication/facebook";
+import { GoogleModule } from "./lib/authentication/google";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -46,6 +47,7 @@ import { AuthFacebookModule } from "./lib/authentication/facebook";
         Q8AModule,
         MenuModule,
         AuthFacebookModule,
+        GoogleModule,
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],

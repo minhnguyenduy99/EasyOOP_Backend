@@ -20,9 +20,9 @@ export class PostEvents {
     @OnEvent(POST_EVENTS.POST_CREATED, { async: true })
     async onPostCreated(info: OnPostCreatedDTO) {
         const { post, topic } = info;
-        const firstPost = await this.postModel.findById(
-            post.previous_post_id ?? topic.first_post_id,
-        );
+        const firstPost = await this.postModel.findOne({
+            post_id: post.previous_post_id ?? topic.first_post_id,
+        });
         // Add to first and update first post id of topic
         if (!post.previous_post_id) {
             topic.first_post_id = post._id;
@@ -119,8 +119,8 @@ export class PostEvents {
             await post.save();
             return;
         }
-        first.previous_post_id = post._id;
-        post.next_post_id = first._id;
+        first.previous_post_id = post.post_id;
+        post.next_post_id = first.post_id;
         await Promise.all([first.save(), post.save()]);
     }
 
@@ -131,16 +131,16 @@ export class PostEvents {
             await post.save();
             return;
         }
-        last.next_post_id = post._id;
-        post.previous_post_id = last._id;
+        last.next_post_id = post.post_id;
+        post.previous_post_id = last.post_id;
         await Promise.all([last.save(), post.save()]);
     }
 
     protected async addBetween(first: Post, last: Post, post: Post) {
-        first.next_post_id = post._id;
-        post.previous_post_id = first._id;
-        post.next_post_id = last._id;
-        last.previous_post_id = post._id;
+        first.next_post_id = post.post_id;
+        post.previous_post_id = first.post_id;
+        post.next_post_id = last.post_id;
+        last.previous_post_id = post.post_id;
         await Promise.all([first.save(), post.save(), last.save()]);
     }
 }

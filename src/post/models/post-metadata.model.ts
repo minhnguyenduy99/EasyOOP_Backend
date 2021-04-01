@@ -4,12 +4,6 @@ import { Document, Types } from "mongoose";
 @Schema()
 export class PostMetadata extends Document {
     @Prop({
-        type: Number,
-        default: Date.now(),
-    })
-    created_date: number;
-
-    @Prop({
         required: true,
     })
     content_file_id: string;
@@ -31,7 +25,3 @@ export class PostMetadata extends Document {
 }
 
 export const PostMetadataSchema = SchemaFactory.createForClass(PostMetadata);
-
-PostMetadataSchema.index({
-    created_date: -1,
-});

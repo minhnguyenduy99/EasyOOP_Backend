@@ -1,30 +1,32 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { EventEmitter2 } from "eventemitter2";
 import { Model, Types } from "mongoose";
-import { AggregateBuilder } from "src/lib/database/mongo";
-import { TAG_TYPES } from "../consts";
+import {
+    AggregateBuilder,
+    LimitOptions as MongoLimitOption,
+} from "src/lib/database/mongo";
+import { POST_STATUSES, TAG_TYPES } from "../consts";
 import {
     CommitActionResult,
     CreatePostDTO,
     LimitOptions,
     PaginatedResult,
-    PostDTO,
+    PostWithTagDTO,
     SortOptions,
-    TagResult,
-    UpdatePostDTO,
 } from "../dtos";
 import { POST_EVENTS } from "../events";
-import { BaseLimiter, PostFilter, PostFilterOptions } from "../helpers";
+import { PostFilterOptions, PostServiceExtender } from "../helpers";
 import { Post, PostMetadata, Topic } from "../models";
 import { PostMetadataService } from "./post-metadata.service";
 import { Tag, TagType } from "src/tag";
+import { ERRORS } from "../errors";
 
 export interface IPostService {
     createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>>;
     updatePost(
         postId: string,
-        dto: UpdatePostDTO,
+        dto: CreatePostDTO,
     ): Promise<CommitActionResult<Post>>;
     getPosts(
         filter: PostFilterOptions,
@@ -37,8 +39,15 @@ export interface IPostService {
         limit?: LimitOptions,
         sort?: SortOptions,
     ): Promise<any>;
-    getPostsByTag(tag: string[], limit?: LimitOptions): Promise<PostDTO[]>;
-    deletePost(postId: string): Promise<CommitActionResult<void>>;
+    getPostsByTag(
+        tags: string[],
+        limit?: LimitOptions,
+    ): Promise<PostWithTagDTO>;
+    deletePost(postId: string): Promise<CommitActionResult<string>>;
+
+    verifyDelete(postId: string): Promise<CommitActionResult<string>>;
+    verifyCreate(postId: string): Promise<CommitActionResult<string>>;
+    verifyUpdate(postId: string): Promise<CommitActionResult<string>>;
 }
 
 @Injectable()
@@ -50,10 +59,21 @@ export class PostService implements IPostService {
         @InjectModel(PostMetadata.name)
         private postMetadataModel: Model<PostMetadata>,
         private postMetadataService: PostMetadataService,
-        private postFilter: PostFilter,
-        private postLimiter: BaseLimiter,
+        private postExtender: PostServiceExtender,
         private eventEmitter: EventEmitter2,
+        private logger: Logger,
     ) {}
+
+    verifyDelete(postId: string): Promise<CommitActionResult<string>> {
+        throw new Error("Method not implemented.");
+    }
+
+    verifyCreate(postId: string): Promise<CommitActionResult<string>> {
+        throw new Error("Method not implemented.");
+    }
+    verifyUpdate(postId: string): Promise<CommitActionResult<string>> {
+        throw new Error("Method not implemented.");
+    }
 
     async getPosts(
         filterOptions: PostFilterOptions,
@@ -61,9 +81,12 @@ export class PostService implements IPostService {
         sort?: SortOptions,
     ) {
         const builder = new AggregateBuilder();
+        this.postExtender
+            .filter(builder, filterOptions)
+            .groupWithTopic(builder)
+            .groupWithTags(builder)
+            .limit(builder, limit as MongoLimitOption);
 
-        builder.aggregate(this.postFilter.filter(filterOptions));
-        builder.aggregate(this.postLimiter.limit(limit?.start, limit?.limit));
         builder.sort({
             [sort.field]: sort.asc ? 1 : -1,
         });
@@ -71,7 +94,7 @@ export class PostService implements IPostService {
         const queryResult = await this.postModel
             .aggregate(builder.log(null).build())
             .exec();
-        console.log(queryResult);
+
         const [{ results, count }] = queryResult;
         return {
             count,
@@ -79,94 +102,44 @@ export class PostService implements IPostService {
         };
     }
 
-    async createPost(dto: CreatePostDTO) {
-        const [topic, post] = await Promise.all([
-            this.topicModel.findById(dto.topic_id),
-            (dto?.previous_post_id
-                ? this.doesPostExist(dto.previous_post_id)
-                : Promise.resolve(true)) as Promise<unknown>,
-        ]);
-        if (!topic || !post) {
-            if (!topic) {
-                return {
-                    code: -1,
-                    error: "Topic is invalid",
-                };
-            } else {
-                return {
-                    code: -2,
-                    error: "Previous post ID is invalid",
-                };
-            }
-        }
-        const { content_file, thumbnail_file, ...postDTO } = dto;
-        // Create post metadata
-        const createMetaResult = await this.postMetadataService.create({
-            content_file,
-            thumbnail_file,
-        });
-        if (createMetaResult.error) {
-            return {
-                code: -3,
-                error: createMetaResult.error,
-            };
-        }
-
-        try {
-            const inputDoc = {
-                ...postDTO,
-                post_metadata_id: createMetaResult.data._id,
-                topic_id: topic._id,
-            };
-            const post = await this.postModel.create(inputDoc);
-            this.eventEmitter.emitAsync(POST_EVENTS.POST_CREATED, {
-                post,
-                topic,
-            });
-            return {
-                code: 0,
-                data: post,
-            };
-        } catch (err) {
-            const error = err?.message ?? err ?? "Create post failed";
-            return {
-                code: -3,
-                error,
-            };
-        }
+    async createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>> {
+        return this.innerCreatePost(dto, POST_STATUSES.ACTIVE);
     }
 
-    updatePost(
+    async updatePost(
         postId: string,
-        dto: UpdatePostDTO,
+        dto: CreatePostDTO,
     ): Promise<CommitActionResult<Post>> {
-        throw new Error("Method not implemented.");
+        const post = await this.postModel.findById(postId);
+        if (!post) {
+            return {
+                code: -10,
+                error: "Post not found",
+            };
+        }
+        const createPostResult = await this.innerCreatePost(
+            dto,
+            POST_STATUSES.PENDING_UPDATED,
+        );
+        if (createPostResult.error) {
+            return createPostResult;
+        }
+        this.eventEmitter.emitAsync(POST_EVENTS.POST_UPDATED, {
+            post: createPostResult.data,
+        });
+        return createPostResult;
     }
 
     async getPostById(postId: string): Promise<any> {
         const builder = new AggregateBuilder();
-        builder
-            .match({
-                _id: Types.ObjectId(postId),
-            })
-            .lookup({
-                from: this.postMetadataModel,
-                localField: "post_metadata_id",
-                foreignField: "_id",
-                as: "post_metadata_id",
-                single: true,
-                removeFields: ["__v", "_id"],
-                mergeObject: true,
-            })
-            .lookup({
-                from: this.topicModel,
-                localField: "topic_id",
-                foreignField: "_id",
-                as: "topic",
-                single: true,
-                removeFields: ["__v", "_id", "first_post_id"],
-                mergeObject: true,
-            });
+        builder.match({
+            post_id: postId,
+        });
+        this.postExtender
+            .groupWithMetadata(builder)
+            .groupWithTopic(builder)
+            .groupWithTags(builder);
+
         const result = await this.postModel.aggregate(builder.build()).exec();
         return result?.[0];
     }
@@ -179,14 +152,14 @@ export class PostService implements IPostService {
         const builder = new AggregateBuilder();
         builder
             .match({
-                _id: topic.first_post_id,
+                post_id: topic.first_post_id,
             })
             .aggregate({
                 $facet: {
                     firstPost: [
                         {
                             $project: {
-                                _id: 1,
+                                post_id: 1,
                                 post_title: 1,
                             },
                         },
@@ -197,7 +170,7 @@ export class PostService implements IPostService {
                                 from: this.postModel.collection.name,
                                 startWith: "$next_post_id",
                                 connectFromField: "next_post_id",
-                                connectToField: "_id",
+                                connectToField: "post_id",
                                 as: "list_posts",
                                 depthField: "order",
                             },
@@ -217,7 +190,7 @@ export class PostService implements IPostService {
                         },
                         {
                             $project: {
-                                _id: "$list_posts._id",
+                                post_id: "$list_posts.post_id",
                                 post_title: "$list_posts.post_title",
                             },
                         },
@@ -230,7 +203,10 @@ export class PostService implements IPostService {
             return [];
         }
         firstPost = firstPost[0];
-        return [firstPost].concat(nextPosts);
+        return {
+            ...topic.toObject(),
+            list_posts: [firstPost].concat(nextPosts),
+        };
     }
 
     async getPostsByTag(
@@ -284,45 +260,120 @@ export class PostService implements IPostService {
         const queriedResult = await this.postModel.aggregate(builder.build());
         const [{ results }] = queriedResult;
 
-        return new (TagResult(PostDTO))(
-            {
-                tag_id: tagIds,
-            },
+        return {
+            tags: tagIds,
             results,
-        );
+        } as PostWithTagDTO;
     }
 
     async deletePost(postId: string) {
+        const post = await this.postModel.findOne({
+            post_id: postId,
+        });
+        if (!post) {
+            return {
+                code: -1,
+                error: "Post not found",
+            };
+        }
+        post.post_status = POST_STATUSES.PENDING_DELETED;
         try {
-            const result = await this.postModel.findByIdAndDelete(postId, {
-                multipleCastError: true,
-                useFindAndModify: false,
-            });
-            if (!result) {
+            await post.save();
+            return {
+                code: 0,
+                data: postId,
+            };
+        } catch (err) {
+            this.logger.error(err);
+            return ERRORS.ServiceError;
+        }
+    }
+
+    protected async innerCreatePost(
+        dto: CreatePostDTO,
+        postStatus: number,
+    ): Promise<CommitActionResult<Post>> {
+        const [topic, post, tagsValid] = await Promise.all([
+            this.topicModel.findById(dto.topic_id),
+            (dto?.previous_post_id
+                ? this.doesPostExist(dto.previous_post_id)
+                : Promise.resolve(true)) as Promise<unknown>,
+            this.tagsValid(dto.tags),
+        ]);
+        if (!topic || !post) {
+            if (!topic) {
                 return {
                     code: -1,
-                    error: "Invalid post ID",
+                    error: "Topic is invalid",
+                };
+            } else {
+                return {
+                    code: -2,
+                    error: "Previous post ID is invalid",
                 };
             }
-            this.eventEmitter.emitAsync(POST_EVENTS.POST_DELETED, {
-                post: result,
+        }
+        if (!tagsValid) {
+            return {
+                code: -3,
+                error: "Tags are invalid",
+            };
+        }
+        const { content_file, thumbnail_file, ...postDTO } = dto;
+        // Create post metadata
+        const createMetaResult = await this.postMetadataService.create({
+            content_file,
+            thumbnail_file,
+        });
+        if (createMetaResult.error) {
+            return {
+                code: -4,
+                error: createMetaResult.error,
+            };
+        }
+
+        try {
+            const inputDoc = {
+                ...postDTO,
+                post_metadata_id: createMetaResult.data._id,
+                topic_id: topic._id,
+                post_status: postStatus,
+            };
+            const post = await this.postModel.create(inputDoc);
+            this.eventEmitter.emitAsync(POST_EVENTS.POST_CREATED, {
+                post,
+                topic,
             });
             return {
                 code: 0,
+                data: post,
             };
         } catch (err) {
-            console.error(err.stack);
-            return {
-                code: -2,
-                error: err,
-            };
+            this.logger.error(err);
+            return ERRORS.ServiceError;
         }
     }
 
     protected async doesPostExist(postId: string) {
-        const post = await this.postModel.findById(postId, {
-            _id: 1,
-        });
+        const post = await this.postModel.findOne(
+            {
+                post_id: postId,
+            },
+            {
+                post_id: 1,
+            },
+        );
         return post ?? false;
+    }
+
+    protected async tagsValid(tags: string[]) {
+        // const foundTags = await this.tagModel.find({
+        //     tag_id: {
+        //         $in: tags,
+        //     },
+        // });
+        // console.log(foundTags);
+        // return foundTags.length === tags.length;
+        return true;
     }
 }

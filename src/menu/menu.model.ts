@@ -13,6 +13,11 @@ export class Menu extends Document {
     request_type: string;
 
     @Prop({
+        required: true,
+    })
+    tag_id: string;
+
+    @Prop({
         required: false,
         default: null,
     })

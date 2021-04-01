@@ -1,4 +1,4 @@
-import { Logger } from "@nestjs/common";
+import { Inject, Logger } from "@nestjs/common";
 import { v4 as uidv4 } from "uuid";
 import { Model } from "mongoose";
 import { AuthUser } from "../models";
@@ -10,6 +10,11 @@ import {
     UserProfileDTO,
 } from "../dtos";
 import { EncryptService } from "src/lib/encrypt";
+import { MongoErrors } from "src/lib/database/mongo";
+import { EventEmitter2 } from "eventemitter2";
+import { USER_EVENTS } from "../events";
+import { ModuleRef } from "@nestjs/core";
+import { getModelToken, InjectModel } from "@nestjs/mongoose";
 
 export interface IAuthUserService {
     createUser(input: CreateUserDTO): Promise<ServiceResult<AuthUser>>;
@@ -23,14 +28,17 @@ export interface IAuthUserService {
 }
 
 export abstract class BaseAuthUserService implements IAuthUserService {
-    constructor(
-        protected readonly userModel: Model<AuthUser>,
-        protected readonly encryptService: EncryptService,
-        protected readonly logger: Logger,
-    ) {}
+    @InjectModel(AuthUser.name)
+    protected readonly userModel: Model<AuthUser>;
+    @Inject(EncryptService)
+    protected readonly encryptService: EncryptService;
+    @Inject(Logger)
+    protected readonly logger: Logger;
+    @Inject(EventEmitter2)
+    protected readonly eventEmitter: EventEmitter2;
 
     async createUser(input: CreateUserDTO) {
-        const { password } = input;
+        const { password, isActive } = input;
         const [profile, extractedUser, passwordHash] = await Promise.all([
             this.extractProfile(input),
             this.extractUser(input),
@@ -42,7 +50,7 @@ export abstract class BaseAuthUserService implements IAuthUserService {
                 ? passwordHash
                 : null,
             login_status: LOGIN_STATUSES.UNLOGINED,
-            is_active: false,
+            is_active: isActive,
             profile,
             type: this.getUserType(),
         };
@@ -54,9 +62,36 @@ export abstract class BaseAuthUserService implements IAuthUserService {
             };
         } catch (err) {
             this.logger.verbose(err);
+            const error = MongoErrors.isDuplicateKeyError(err);
+            err = error ?? {
+                message: "Create user error",
+            };
             return {
                 code: -1,
                 error: err,
+            };
+        }
+    }
+
+    async activateUser(userId: string) {
+        const user = await this.getUserById(userId);
+        if (!user) {
+            return {
+                code: -1,
+                error: "User not found",
+            };
+        }
+        user.is_active = true;
+        try {
+            await user.save();
+            this.eventEmitter.emitAsync(USER_EVENTS.UserActivated, {
+                user,
+            });
+        } catch (err) {
+            this.logger.verbose(err);
+            return {
+                code: -10,
+                error: "Service failed",
             };
         }
     }

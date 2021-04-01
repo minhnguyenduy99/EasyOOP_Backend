@@ -17,12 +17,10 @@ export class TagService implements ITagService {
         const results = await this.tagModel.aggregate(
             new AggregateBuilder()
                 .match({
-                    tag_type: type,
+                    $text: { $search: value },
                 })
                 .match({
-                    tag_value: {
-                        $text: { $search: value },
-                    },
+                    tag_type: type,
                 })
                 .log(null)
                 .build(),

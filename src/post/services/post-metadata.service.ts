@@ -1,33 +1,30 @@
-import {
-    Injectable,
-    InternalServerErrorException,
-    Logger,
-} from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { CloudinaryService } from "src/lib/cloudinary";
-import { AggregateBuilder } from "src/lib/database/mongo";
 import { CommitActionResult, CreatePostMetadataDTO } from "../dtos";
-import { PostMetadata, Topic } from "../models";
+import { ERRORS } from "../errors";
+import { PostMetadata } from "../models";
 
 export interface IPostMetadataService {
     create(
         dto: CreatePostMetadataDTO,
     ): Promise<CommitActionResult<PostMetadata>>;
-    getPostByTopic(topicId: string, page: number): Promise<any>;
+    delete(postMetadataId: string): Promise<CommitActionResult<string>>;
 }
 
 @Injectable()
 export class PostMetadataService implements IPostMetadataService {
     constructor(
-        @InjectModel(Topic.name) private topicModel: Model<Topic>,
         @InjectModel(PostMetadata.name)
         private postMetadataModel: Model<PostMetadata>,
         private fileUploader: CloudinaryService,
         private logger: Logger,
     ) {}
 
-    async create(dto: CreatePostMetadataDTO) {
+    async create(
+        dto: CreatePostMetadataDTO,
+    ): Promise<CommitActionResult<PostMetadata>> {
         const { content_file, thumbnail_file } = dto;
         const [uploadContentResult, uploadThumbnailResult] = await Promise.all([
             this.fileUploader.uploadFile(content_file, {
@@ -72,15 +69,29 @@ export class PostMetadataService implements IPostMetadataService {
                 data: result,
             };
         } catch (err) {
-            this.logger.error(err?.stack ?? err);
-            return {
-                code: -1,
-                error: err?.message ?? err,
-            };
+            this.logger.error(err);
+            return ERRORS.ServiceError;
         }
     }
 
-    async getPostByTopic(topicId: string, page: number): Promise<any> {
-        throw new InternalServerErrorException("Not implemented");
+    async delete(postMetadataId: string): Promise<CommitActionResult<string>> {
+        const metadata = await this.postMetadataModel.findById(postMetadataId);
+        if (!metadata) {
+            return {
+                code: -1,
+                error: "Post metadata not found",
+            };
+        }
+        const { thumbnail_file_id, content_file_id } = metadata;
+        try {
+            await Promise.all([
+                this.fileUploader.deleteFile(thumbnail_file_id),
+                this.fileUploader.deleteFile(content_file_id),
+                metadata.delete(),
+            ]);
+        } catch (err) {
+            this.logger.error(err);
+            return ERRORS.ServiceError;
+        }
     }
 }

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { ModuleRef } from "@nestjs/core";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { EncryptService } from "src/lib/encrypt";
@@ -16,14 +17,10 @@ import { FacebookUser } from "./interfaces";
 @Injectable()
 export class FacebookUserService extends BaseAuthUserService {
     constructor(
-        @InjectModel(AuthUser.name)
-        readonly userModel: Model<AuthUser>,
-        readonly encryptService: EncryptService,
-        readonly logger: Logger,
         protected readonly verifier: UserVerifier,
         protected mailVerification: MailVerification,
     ) {
-        super(userModel, encryptService, logger);
+        super();
         const formatter = new DetailVerificationFormatter();
         this.mailVerification.useFormatter(formatter);
         this.verifier.useVerificationSender(this.mailVerification);

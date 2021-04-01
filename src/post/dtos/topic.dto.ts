@@ -42,4 +42,9 @@ export class TopicDTO extends BaseModelSerializer {
     topic_id() {
         return this._id?.toString();
     }
+
+    post_count: number;
+
+    @Transform(({ value }) => value?.toString() ?? value)
+    first_post_id: string;
 }

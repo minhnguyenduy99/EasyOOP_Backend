@@ -1,5 +1,5 @@
 import { DynamicModule, Module, Logger } from "@nestjs/common";
-import { MongooseModule } from "@nestjs/mongoose";
+import { getModelToken, MongooseModule } from "@nestjs/mongoose";
 import { AuthUser, AuthUserSchema, Verifier, VerifierSchema } from "./models";
 import { ForFeatureOptions } from "./core.interfaces";
 import { AuthenticationService, UserVerifier } from "./services";
@@ -9,6 +9,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { CONFIG_KEYS } from "./core.config";
 import { TokenConfig } from "./interfaces";
 import { PROVIDER } from "./consts";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { PROVIDER } from "./consts";
             { name: AuthUser.name, schema: AuthUserSchema },
             { name: Verifier.name, schema: VerifierSchema },
         ]),
+        EventEmitterModule,
     ],
     providers: [
         {
@@ -39,7 +41,12 @@ import { PROVIDER } from "./consts";
         },
         AuthenticationService,
     ],
-    exports: [MongooseModule, EncryptModule, AuthenticationService],
+    exports: [
+        MongooseModule,
+        EncryptModule,
+        EventEmitterModule,
+        AuthenticationService,
+    ],
 })
 export class AuthenticationCoreModule {
     static forFeature(options: ForFeatureOptions): DynamicModule {

@@ -3,8 +3,12 @@ import { EventEmitterModule } from "@nestjs/event-emitter";
 import { MongooseModule } from "@nestjs/mongoose";
 import { CloudinaryModule } from "src/lib/cloudinary";
 import { PaginationModule } from "src/lib/pagination";
-import { PostController, TopicController } from "./controllers";
-import { PostFilter, BaseLimiter } from "./helpers";
+import {
+    PostController,
+    TopicController,
+    AdminPostController,
+} from "./controllers";
+import { BaseLimiter, PostServiceExtender } from "./helpers";
 import {
     Post,
     PostMetadata,
@@ -40,11 +44,11 @@ import { TagModule } from "src/tag";
         TopicService,
         PostService,
         PostMetadataService,
-        PostFilter,
+        PostServiceExtender,
         BaseLimiter,
         PostEvents,
     ],
-    controllers: [TopicController, PostController],
+    controllers: [TopicController, PostController, AdminPostController],
     exports: [TopicService, PostService],
 })
 export class PostModule {}

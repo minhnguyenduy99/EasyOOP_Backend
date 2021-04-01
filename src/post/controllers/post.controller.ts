@@ -10,13 +10,17 @@ import {
     Param,
     ParseIntPipe,
     Post,
+    Put,
     Query,
     UseInterceptors,
 } from "@nestjs/common";
 import {
+    BodyValidationPipe,
     MongoObjectIdValidator,
     ParamValidationPipe,
     QueryValidationPipe,
+    ResponseSerializerInterceptor,
+    Serialize,
     UseFormData,
 } from "src/lib/helpers";
 import {
@@ -24,51 +28,36 @@ import {
     PaginatorFactory,
     ParsePagePipe,
 } from "src/lib/pagination";
+import { POST_STATUSES } from "../consts";
 import {
-    CreatePostDTO,
-    DetailedPostDTO,
     GetPostsDTO,
     PaginatedPostDTO,
     PostDTO,
+    PostWithTagDTO,
+    PostWithTopicDTO,
     SortOptions,
 } from "../dtos";
 import { PostFilterOptions } from "../helpers";
 import { PostService } from "../services";
 
 @Controller("/posts")
+@UseInterceptors(ResponseSerializerInterceptor)
 export class PostController {
-    protected readonly DEFAULT_PAGE_SIZE = 10;
+    protected readonly DEFAULT_PAGE_SIZE = 6;
     protected paginator: IPaginator;
 
     constructor(
         private postService: PostService,
-        private paginatorFactory: PaginatorFactory,
+        paginatorFactory: PaginatorFactory,
     ) {
         this.paginator = paginatorFactory.createPaginator({
-            pageURL: "localhost:3000",
+            pageURL: "http://localhost:3000",
             pageSize: this.DEFAULT_PAGE_SIZE,
         });
     }
 
-    @Post()
-    @UseFormData({
-        fileField: ["content_file", "thumbnail_file"],
-    })
-    async createPost(@Body() dto: CreatePostDTO) {
-        const { code, error, data } = await this.postService.createPost(dto);
-        if (error) {
-            throw new BadRequestException(error);
-        }
-        return {
-            code,
-            data: {
-                post_id: data._id.toString(),
-            },
-        };
-    }
-
     @Get("/search/:page")
-    @UseInterceptors(ClassSerializerInterceptor)
+    @Serialize(PaginatedPostDTO, true)
     async getPosts(
         @Param("page", ParseIntPipe) page: number,
         @Query(QueryValidationPipe) searchOptions: GetPostsDTO,
@@ -78,9 +67,10 @@ export class PostController {
             start: (page - 1) * this.DEFAULT_PAGE_SIZE,
             limit: this.DEFAULT_PAGE_SIZE,
         };
-        console.log(limit);
         const filter = {
             keyword: search,
+            topic_id: searchOptions.topic_id,
+            post_status: POST_STATUSES.ACTIVE,
         } as PostFilterOptions;
         const sorter = {
             field: sort_by,
@@ -93,42 +83,47 @@ export class PostController {
         );
         const paginatedResults = await this.paginator.paginate(results, count, {
             page,
+            additionQuery: searchOptions,
         });
-        return new PaginatedPostDTO(paginatedResults, {
-            resultType: PostDTO,
-            serializeResults: true,
-        });
+        return paginatedResults;
     }
 
-    @Get("/topic/:topic_id/:page")
+    @Get("/topic/:topic_id")
     @UseInterceptors(ClassSerializerInterceptor)
+    @Serialize(PostWithTopicDTO)
     async getPostByTopic(
         @Param("topic_id", new ParamValidationPipe(MongoObjectIdValidator))
         topicId: string,
-        @Param("page", ParseIntPipe) page: number,
     ) {
         const result = await this.postService.getPostByTopic(topicId);
         if (result === null) {
-            throw new NotFoundException("Invalid topic ID");
+            throw new BadRequestException({
+                code: -1,
+                error: "Invalid topic ID",
+            });
         }
-        return result.map((post) => new PostDTO(post));
+        return result;
     }
 
     @Get("/:post_id")
-    @UseInterceptors(ClassSerializerInterceptor)
+    @Serialize(PostDTO)
     async getPostById(
-        @Param("post_id", new ParamValidationPipe(MongoObjectIdValidator))
+        @Param("post_id", ParamValidationPipe)
         postId: string,
     ) {
         const post = await this.postService.getPostById(postId);
         if (!post) {
-            throw new NotFoundException("Post not found");
+            throw new NotFoundException({
+                code: -1,
+                error: "Post not found",
+            });
         }
-        return new DetailedPostDTO(post);
+        return post;
     }
 
     @Get("/tags/search")
     @UseInterceptors(ClassSerializerInterceptor)
+    @Serialize(PostWithTagDTO)
     async getPostsByTag(
         @Query("tags")
         tagStr: string,
@@ -141,32 +136,6 @@ export class PostController {
         };
         const tags = tagStr.trim().split(",");
         const result = await this.postService.getPostsByTag(tags, limit);
-        return result;
-    }
-
-    // @Put("/:post_id")
-    // @UseFormData({
-    //     fileField: ["content_file", "thumbnail_file"],
-    // })
-    // async updatePost(
-    //     @Param("topic_id", new ParamValidationPipe(MongoObjectIdValidator))
-    //     topicId: string,
-    //     @Body() updateDTO: UpdatePostDTO,
-    // ) {}
-
-    @Delete("/:post_id")
-    async deletePost(
-        @Param("post_id", new ParamValidationPipe(MongoObjectIdValidator))
-        postId: string,
-    ) {
-        const result = await this.postService.deletePost(postId);
-        if (result.code === -1) {
-            throw new BadRequestException(result);
-        } else {
-            if (result.code === -2) {
-                throw new InternalServerErrorException();
-            }
-        }
         return result;
     }
 }

@@ -20,7 +20,6 @@ export class CreatePostMetadataDTO {
 }
 
 export class PostMetadataDTO extends BaseModelSerializer {
-    created_date: number;
     @Exclude()
     content_file_id: string;
 
