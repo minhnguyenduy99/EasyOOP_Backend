@@ -28,13 +28,6 @@ export class TaskTopic extends BaseMessageHandler {
     }
 
     private handlerTrusted(topic: string, type: string) {
-        if (type == "definition")
-            type = "question"
-        else if (type == "example")
-            type = "post"
-        this.Log.debug({ type: type, value: topic });
-
-
         CacheService.integrationService.getResultByTag({ type: type, value: topic }).then((ret) => {
             if (ret.length == 0)
                 this.msg.reply(new SimpleText({ text: `Xin lỗi, bạn hỏi khó quá, thử cái khác đi` }))
