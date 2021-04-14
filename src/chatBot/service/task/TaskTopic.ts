@@ -70,12 +70,12 @@ export class TaskTopic extends BaseMessageHandler {
     }
 
     private type2text(): string {
-        switch (this.type) {
-            case Label.type.definition:
+        switch (Label.type[this.type]) {
+            case "definition":
                 return "hỏi định nghĩa"
-            case Label.type.example:
+            case "example":
                 return "lấy ví dụ"
-            case Label.type.exercise:
+            case "exercise":
                 "làm bài tập"
             default:
                 return ""
