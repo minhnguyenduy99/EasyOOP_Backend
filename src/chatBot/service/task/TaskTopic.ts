@@ -1,6 +1,5 @@
 import { AttachmentElement, QuickRepliesMessengerDTO } from "src/chatbot/dto";
 import { CacheService, GenericMessenger, QuickRepliesMessenger, SimpleText } from "src/chatbot/helpers";
-import { AnswerDTO } from "src/chatbot/integration/dto";
 import { NLP, Label } from "src/lib/nlp";
 import { BaseMessageHandler } from "..";
 
@@ -28,7 +27,7 @@ export class TaskTopic extends BaseMessageHandler {
     }
 
     private handlerTrusted(topic: string, type: string) {
-        CacheService.integrationService.getResultByTag({ type: type, value: topic }).then((ret) => {
+        CacheService.integrationService.getResultByTag({ type: Label.type[type], value: Label.topic[topic] }).then((ret) => {
             if (ret.length == 0)
                 this.msg.reply(new SimpleText({ text: `Xin lỗi, bạn hỏi khó quá, thử cái khác đi` }))
             else if (ret.length == 1 && ret[0].url == null)
