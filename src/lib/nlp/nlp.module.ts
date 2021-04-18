@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { NLPService, RBSBDService } from ".";
 
 @Module({
-    providers: [RBSBDService, NLPService],
+    providers: [RBSBDService],
     exports: [RBSBDService, NLPService],
 })
-export class NLPModule {}
+export class NLPModule { }
