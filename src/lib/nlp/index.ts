@@ -1,2 +1,6 @@
-export { default as NLP } from "./nlp"
 export { default as Label } from "./out/tag"
+export { default as classifier } from "./classifier"
+export { NLPModule } from "./nlp.module"
+export { default as constant } from "./constant"
+export { default as NLPService } from "./nlp.natural-language-processing.service"
+export { default as RBSBDService } from "./nlp.sentence-boundary.service"

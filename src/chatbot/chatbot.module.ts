@@ -1,4 +1,5 @@
 import { Logger, Module } from "@nestjs/common";
+import { NLPModule } from "src/lib/nlp";
 import { MenuModule } from "src/menu";
 import { ChatHookController } from "./controllers";
 import { ServiceIntegrationModule } from "./integration";
@@ -12,6 +13,6 @@ import { ServiceIntegrationModule } from "./integration";
         },
     ],
     exports: [Logger],
-    imports: [MenuModule, ServiceIntegrationModule]
+    imports: [MenuModule, ServiceIntegrationModule, NLPModule]
 })
 export class ChatbotModule {}

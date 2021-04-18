@@ -11,7 +11,7 @@ class MyClassifier extends FastTextClassifier {
         this.minThreadHold = Number.parseFloat(process.env.ASK_THRESHOLD) || 0.3
     }
 
-    public async getClassifications(document: string, limitOrThreadhold?: number) {
+    public async predict(document: string, limitOrThreadhold?: number) {
         return new Promise((resolve, rejects) => {
             var limit, threadHold
 

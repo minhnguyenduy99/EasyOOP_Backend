@@ -14,10 +14,10 @@ export class TaskNLP extends BaseMessageHandler {
     }
 
     private getTaskByLabel(label: string): BaseMessageHandler {
-        switch (Label.type[label]) {
-            case "welcome":
+        switch (label) {
+            case Label.type.__label__welcome:
                 return new TaskWelcome(this.msg);
-            case "menu":
+            case Label.type.__label__menu:
                 return new TaskMenu(this.msg);
             default:
                 return new TaskTopic(this.msg, this.body, label)
