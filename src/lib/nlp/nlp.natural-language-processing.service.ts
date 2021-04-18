@@ -2,14 +2,14 @@ import { Injectable } from "@nestjs/common";
 import { VNTK } from "vntk";
 import { RBSBDService, classifier } from ".";
 
-interface INLPResult {
+export interface INLPResult {
     raw: string
     type: VNTK.Utility.FastTextClassifierResult[]
     topic: VNTK.Utility.FastTextClassifierResult[]
 }
 
 @Injectable()
-export default class NaturalLanguageProcessing {
+export class NaturalLanguageProcessing {
     constructor(private readonly rbsbd: RBSBDService) { }
 
     public async get(input: string, limitOrThreadhold?: number) {

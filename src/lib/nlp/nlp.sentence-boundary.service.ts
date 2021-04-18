@@ -4,7 +4,7 @@ import { constant } from ".";
 const pos_tag = posTag();
 
 @Injectable()
-export default class RuleBasedSentenceBoundaryDetection {
+export class RuleBasedSentenceBoundaryDetection {
     private getAsync(input: string): string[] {
         let data = null
         data = pos_tag.tag(input)
@@ -49,13 +49,7 @@ export default class RuleBasedSentenceBoundaryDetection {
         return ret
     }
 
-    public async get(input: string): Promise<string[]> {
-        return new Promise((resolve, reject) => {
-            try {
-                resolve(this.getAsync(input))
-            } catch (e) {
-                reject(e)
-            }
-        })
+    public async get(input: string) {
+        return this.getAsync(input)
     }
 }
