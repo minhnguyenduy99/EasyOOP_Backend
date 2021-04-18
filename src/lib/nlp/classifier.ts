@@ -3,7 +3,7 @@ import { join } from "path"
 
 const trustThreshold = process.env.TRUST_THRESHOLD ? Number.parseFloat(process.env.TRUST_THRESHOLD) : 0.7
 const askThreshold = process.env.ASK_THRESHOLD ? Number.parseFloat(process.env.ASK_THRESHOLD) : 0.3
-const nlpLimit = process.env.NLP_LIMIT ? Number.parseInt(process.env.NLP_LIMIT) : 0.3
+const nlpLimit = process.env.NLP_LIMIT ? Number.parseInt(process.env.NLP_LIMIT) : 4
 
 class MyClassifier extends FastTextClassifier {
     public async predict(document: string, limitOrThreadhold?: number) {
