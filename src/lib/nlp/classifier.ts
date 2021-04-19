@@ -1,9 +1,6 @@
 import { FastTextClassifier, VNTK } from "vntk"
 import { join } from "path"
-
-const trustThreshold = process.env.TRUST_THRESHOLD ? Number.parseFloat(process.env.TRUST_THRESHOLD) : 0.7
-const askThreshold = process.env.ASK_THRESHOLD ? Number.parseFloat(process.env.ASK_THRESHOLD) : 0.3
-const nlpLimit = process.env.NLP_LIMIT ? Number.parseInt(process.env.NLP_LIMIT) : 4
+import { constant, Label } from "."
 
 class MyClassifier extends FastTextClassifier {
     public async predict(document: string, limitOrThreadhold?: number) {
@@ -13,11 +10,11 @@ class MyClassifier extends FastTextClassifier {
             if (limitOrThreadhold == null)
                 limitOrThreadhold = 0
             if (limitOrThreadhold <= 1) {
-                limit = nlpLimit
-                threadHold = Math.max(askThreshold, limitOrThreadhold)
+                limit = constant.nlpLimit
+                threadHold = Math.max(constant.askThreshold, limitOrThreadhold)
             } else {
-                limit = Math.max(nlpLimit, limitOrThreadhold)
-                threadHold = askThreshold
+                limit = Math.max(constant.nlpLimit, limitOrThreadhold)
+                threadHold = constant.askThreshold
             }
 
             super.predict(document, limit, (err, res) => {
@@ -25,7 +22,7 @@ class MyClassifier extends FastTextClassifier {
                     rejects(err)
                     return;
                 }
-                if (res[0].value > trustThreshold) {
+                if (res[0].value > constant.trustThreshold) {
                     res.length = 1
                     resolve(res)
                 } else {
