@@ -1,23 +1,24 @@
-import { QuickRepliesMessengerDTO } from "src/chatbot/dto";
-import { CacheService, QuickRepliesMessenger } from "src/chatbot/helpers";
-import { BaseMessageHandler } from "..";
+import { Injectable } from "@nestjs/common";
+import { QuickRepliesMessengerDTO } from "src/chatbot";
+import { QuickRepliesMessenger } from "src/chatbot/helpers";
+import { MenuService } from "src/menu/menu.service";
 
-export class TaskMenu extends BaseMessageHandler {
-    handler() {
-        CacheService.menuService.getMenu(this.body).then((data) => {
-            let rep = {
-                text: data.menu_name || "Chọn mục bạn mong muốn",
-                buttons: []
-            } as QuickRepliesMessengerDTO;
-            data.children_menu.forEach(e => rep.buttons.push({
-                title: e.menu_name,
-                payload: { menu: e.menu_id }
-            }))
-            // rep.buttons.push({
-            //     title: "Quay lại",
-            //     payload: data.parent_menu
-            // })
-            this.msg.reply(new QuickRepliesMessenger(rep))
-        })
+@Injectable()
+export class TaskMenu {
+    constructor(
+        protected readonly menuService: MenuService
+    ) { }
+
+    async handler(menuID?: string) {
+        const data = await this.menuService.getMenu(menuID)
+        let rep = {
+            text: data.menu_name || "Chọn mục bạn mong muốn",
+            buttons: []
+        } as QuickRepliesMessengerDTO;
+        data.children_menu.forEach(e => rep.buttons.push({
+            title: e.menu_name,
+            payload: { menu: e.menu_id }
+        }))
+        return new QuickRepliesMessenger(rep)
     }
 }

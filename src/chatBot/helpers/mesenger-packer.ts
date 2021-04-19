@@ -1,4 +1,4 @@
-import { AttachmentElement, QuickRepliesMessengerDTO, ResponseMessengerDTO, SimpleTextDTO } from "../dto";
+import { AttachmentElement, QuickRepliesMessengerDTO, ResponseMessengerDTO, SimpleTextDTO } from "../";
 
 interface MessengerObject {
     recipient: {
