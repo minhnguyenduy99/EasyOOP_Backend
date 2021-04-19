@@ -22,7 +22,9 @@ class MyClassifier extends FastTextClassifier {
                     rejects(err)
                     return;
                 }
-                if (res[0].value > constant.trustThreshold) {
+                if (res.length == 0) {
+                    resolve(res)
+                } else if (res[0].value > constant.trustThreshold) {
                     res.length = 1
                     resolve(res)
                 } else {
