@@ -27,7 +27,7 @@ class MyClassifier extends FastTextClassifier {
                     resolve(res)
                 } else {
                     let i = res.length;
-                    while (res[--i].value < threadHold);
+                    while (--i >= 0 && res[i].value < threadHold);
                     res.length = i + 1
                     resolve(res)
                 }

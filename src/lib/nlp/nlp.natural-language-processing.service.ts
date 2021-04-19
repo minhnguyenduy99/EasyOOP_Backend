@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { VNTK } from "vntk";
-import { RBSBDService, classifier, constant } from ".";
+import { classifier, constant } from ".";
+import { RuleBasedSentenceBoundaryDetection } from "./nlp.sentence-boundary.service"
 
 export interface INLPResult {
     raw: string
@@ -10,12 +11,14 @@ export interface INLPResult {
 
 @Injectable()
 export class NaturalLanguageProcessing {
-    constructor(private readonly rbsbd: RBSBDService) { }
+    constructor(private readonly rbsbd: RuleBasedSentenceBoundaryDetection) { }
 
     private fixMissing(input: VNTK.Utility.FastTextClassifierResult[], like: VNTK.Utility.FastTextClassifierResult[]) {
-        if (input.length > 0 && input[0].value > constant.trustThreshold)
+        if (input.length > 0 && input[0].value > constant.trustThreshold) {
+            input.length = 1
             return
-        if (!like || like.length == 0)
+        }
+        if (!like || like.length == 0 || like[0].value < constant.trustThreshold)
             return
         input.length = 0
         input.push(...like)
@@ -28,8 +31,8 @@ export class NaturalLanguageProcessing {
                 let type = [] as Promise<VNTK.Utility.FastTextClassifierResult[]>[]
                 let topic = [] as Promise<VNTK.Utility.FastTextClassifierResult[]>[]
                 for (let i = 0, len = raws.length; i < len; i++) {
-                    type[i] = classifier.topic.predict(raws[i], option.limitOrThreadhold)
-                    topic[i] = classifier.type.predict(raws[i], option.limitOrThreadhold)
+                    type[i] = classifier.type.predict(raws[i], option.limitOrThreadhold)
+                    topic[i] = classifier.topic.predict(raws[i], option.limitOrThreadhold)
                 }
                 Promise.all([Promise.all(type), Promise.all(topic)]).then(([resType, resTopic]) => {
                     let ret = [] as INLPResult[]

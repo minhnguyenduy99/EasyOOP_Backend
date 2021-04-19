@@ -22,7 +22,7 @@ const postag2path = {
 
 const o = {
     postag2path: postag2path,
-    trustThreshold: process.env.TRUST_THRESHOLD ? Number.parseFloat(process.env.TRUST_THRESHOLD) : 0.85,
+    trustThreshold: process.env.TRUST_THRESHOLD ? Number.parseFloat(process.env.TRUST_THRESHOLD) : 0.7,
     askThreshold: process.env.ASK_THRESHOLD ? Number.parseFloat(process.env.ASK_THRESHOLD) : 0.3,
     nlpLimit: process.env.NLP_LIMIT ? Number.parseInt(process.env.NLP_LIMIT) : 4
 }
