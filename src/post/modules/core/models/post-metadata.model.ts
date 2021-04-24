@@ -22,6 +22,11 @@ export class PostMetadata extends Document {
         required: false,
     })
     thumbnail_file_url?: string;
+
+    @Prop({
+        required: false,
+    })
+    author_id: string;
 }
 
 export const PostMetadataSchema = SchemaFactory.createForClass(PostMetadata);

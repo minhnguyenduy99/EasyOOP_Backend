@@ -66,6 +66,26 @@ export class CloudinaryService {
         }
     }
 
+    async deleteBulkFiles(publicIds: string[]) {
+        try {
+            const response = await v2.api.delete_resources(publicIds);
+            if (response.result === "ok") {
+                return {
+                    code: 0,
+                };
+            }
+            return {
+                code: -1,
+            };
+        } catch (err) {
+            console.log(err);
+            return {
+                code: -2,
+                error: err,
+            };
+        }
+    }
+
     async deleteFile(
         publicId: string,
         options?: DeleteFileOptions,

@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 import { PostMetadata } from "./post-metadata.model";
-import { GenerateDigitID } from "../helpers";
+import { GenerateDigitID } from "../id-generator";
 
 @Schema()
 export class Post extends Document {
@@ -42,7 +42,7 @@ export class Post extends Document {
         type: Types.ObjectId,
         ref: "Topic",
     })
-    topic_id?: string;
+    topic_id?: Types.ObjectId;
 
     @Prop({
         required: true,
@@ -68,7 +68,7 @@ export class Post extends Document {
 export const PostSchema = SchemaFactory.createForClass(Post);
 
 PostSchema.pre("save", function (next) {
-    if (this.isNew) {
+    if (this.isNew && !this.post_id) {
         this.post_id = GenerateDigitID(10);
     }
     next();
@@ -80,7 +80,6 @@ PostSchema.index({
 
 PostSchema.index({
     post_status: 1,
-    post_id: 1,
 });
 
 PostSchema.index({

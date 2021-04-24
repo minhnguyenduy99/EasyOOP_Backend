@@ -3,7 +3,8 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { AggregateBuilder, LimitOptions } from "src/lib/database/mongo";
 import { Tag } from "src/tag";
-import { PostMetadata, Topic } from "../models";
+import { SortOptions } from "../dtos";
+import { PostMetadata, Topic } from "../modules/core";
 
 export interface PostFilterOptions {
     post_status?: number;
@@ -21,6 +22,14 @@ export class PostServiceExtender {
         @InjectModel(Tag.name)
         private readonly tagModel: Model<Tag>,
     ) {}
+
+    sort(options: SortOptions, builder: AggregateBuilder) {
+        const { field, asc } = options;
+        builder.sort({
+            [field]: asc ? 1 : -1,
+        });
+        return this;
+    }
 
     groupWithMetadata(builder: AggregateBuilder) {
         builder.lookup({
@@ -69,7 +78,7 @@ export class PostServiceExtender {
                 },
             }),
         });
-        if (post_status) {
+        if (post_status !== -1) {
             builder.match({ post_status });
         }
         if (topic_id) {

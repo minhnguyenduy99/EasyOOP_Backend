@@ -4,7 +4,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { MongooseModule } from "@nestjs/mongoose";
 import { AppConfigService } from "./app-config.service";
-import { AppConfig, APP_CONFIG_KEY } from "./app.config";
+import { AppConfig } from "./app.config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { ChatbotModule } from "./chatbot";

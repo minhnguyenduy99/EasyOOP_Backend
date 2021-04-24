@@ -4,12 +4,15 @@ import {
     Type,
     BadRequestException,
     Injectable,
+    Logger,
 } from "@nestjs/common";
 import { plainToClass } from "class-transformer";
 import { validate } from "class-validator";
 
 @Injectable()
 export class QueryValidationPipe implements PipeTransform<any> {
+    protected logger: Logger = new Logger("QueryValidationPipe");
+
     async transform(value: any, { metatype, type }: ArgumentMetadata) {
         // Only validate query type
         if (type !== "query") {
@@ -22,6 +25,7 @@ export class QueryValidationPipe implements PipeTransform<any> {
         const object = plainToClass(metatype, value);
         const errors = await validate(object);
         if (errors.length > 0) {
+            this.logger.verbose(errors);
             throw new BadRequestException({
                 message: "Invalid request query parameters",
             });

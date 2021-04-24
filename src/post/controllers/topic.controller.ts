@@ -1,7 +1,6 @@
 import {
     BadRequestException,
     Body,
-    ClassSerializerInterceptor,
     Controller,
     Get,
     InternalServerErrorException,

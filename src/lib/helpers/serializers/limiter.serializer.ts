@@ -34,7 +34,7 @@ export function LimiterSerializer(
         remain_item_count: number;
         next: string;
 
-        @Type(() => options.resultType)
+        @Type(() => resultType)
         results: any[];
 
         constructor(partial: Partial<LimiterDTO>) {

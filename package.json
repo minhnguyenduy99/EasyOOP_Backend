@@ -18,7 +18,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "copy:assets": "cp -rv src/assets/ dist/assets/"
   },
   "dependencies": {
     "@nestjs/common": "^7.6.13",
@@ -34,6 +35,7 @@
     "class-validator": "^0.13.1",
     "cloudinary": "^1.24.0",
     "cookie-parser": "^1.4.5",
+    "cpx": "^1.5.0",
     "mongoose": "^5.11.14",
     "nodemailer": "^6.5.0",
     "passport": "^0.4.1",

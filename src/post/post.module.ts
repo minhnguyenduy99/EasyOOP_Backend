@@ -1,39 +1,29 @@
 import { Logger, Module } from "@nestjs/common";
 import { EventEmitterModule } from "@nestjs/event-emitter";
-import { MongooseModule } from "@nestjs/mongoose";
-import { CloudinaryModule } from "src/lib/cloudinary";
 import { PaginationModule } from "src/lib/pagination";
+import { CloudinaryModule } from "src/lib/cloudinary";
+import { TagModule } from "src/tag";
+import { CoreModule } from "./modules/core";
 import {
     PostController,
     TopicController,
-    AdminPostController,
+    PostVerificationController,
+    CreatorPostController,
+    CreatorVerificationController,
 } from "./controllers";
 import { BaseLimiter, PostServiceExtender } from "./helpers";
-import {
-    Post,
-    PostMetadata,
-    PostMetadataSchema,
-    PostSchema,
-    Topic,
-    TopicSchema,
-} from "./models";
 import { PostService, TopicService } from "./services";
-import { PostMetadataService } from "./services/post-metadata.service";
-import { PostEvents } from "./events";
-import { TagModule } from "src/tag";
+import { PostVerificationModule } from "./modules/post-verification";
 
 @Module({
     imports: [
-        MongooseModule.forFeature([
-            { name: Topic.name, schema: TopicSchema },
-            { name: Post.name, schema: PostSchema },
-            { name: PostMetadata.name, schema: PostMetadataSchema },
-        ]),
+        CoreModule,
+        PostVerificationModule,
         PaginationModule,
+        EventEmitterModule,
         CloudinaryModule.forFeature({
             folder: "POSTS",
         }),
-        EventEmitterModule,
         TagModule,
     ],
     providers: [
@@ -41,14 +31,18 @@ import { TagModule } from "src/tag";
             provide: Logger,
             useValue: new Logger("PostModule"),
         },
-        TopicService,
-        PostService,
-        PostMetadataService,
         PostServiceExtender,
         BaseLimiter,
-        PostEvents,
+        TopicService,
+        PostService,
     ],
-    controllers: [TopicController, PostController, AdminPostController],
+    controllers: [
+        TopicController,
+        PostController,
+        CreatorPostController,
+        CreatorVerificationController,
+        PostVerificationController,
+    ],
     exports: [TopicService, PostService],
 })
 export class PostModule {}

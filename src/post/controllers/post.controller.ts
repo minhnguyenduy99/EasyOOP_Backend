@@ -1,34 +1,26 @@
 import {
     BadRequestException,
-    Body,
     ClassSerializerInterceptor,
     Controller,
-    Delete,
     Get,
-    InternalServerErrorException,
     NotFoundException,
     Param,
     ParseIntPipe,
-    Post,
-    Put,
     Query,
     UseInterceptors,
 } from "@nestjs/common";
 import {
-    BodyValidationPipe,
     MongoObjectIdValidator,
     ParamValidationPipe,
     QueryValidationPipe,
     ResponseSerializerInterceptor,
     Serialize,
-    UseFormData,
 } from "src/lib/helpers";
 import {
     IPaginator,
     PaginatorFactory,
     ParsePagePipe,
 } from "src/lib/pagination";
-import { POST_STATUSES } from "../consts";
 import {
     GetPostsDTO,
     PaginatedPostDTO,
@@ -38,6 +30,7 @@ import {
     SortOptions,
 } from "../dtos";
 import { PostFilterOptions } from "../helpers";
+import { POST_STATUSES } from "../modules/core";
 import { PostService } from "../services";
 
 @Controller("/posts")

@@ -18,6 +18,7 @@ export class PaginatedPostDTO extends BasePaginationSerializer<PostDTO> {
 export class PostDTO extends BaseModelSerializer {
     post_id: string;
     post_title: string;
+    post_status: number;
 
     @Type(({ object, property }) => {
         if (object[property] instanceof PostMetadataDTO) {
@@ -40,6 +41,16 @@ export class PostDTO extends BaseModelSerializer {
     tags: TagDTO[];
 
     created_date: number;
+
+    @Exclude()
+    content_file_id?: string;
+
+    @Exclude()
+    thumbnail_file_id?: string;
+
+    content_file_url?: string;
+
+    thumbnail_file_url?: string;
 }
 
 export class PostWithTagDTO extends BaseModelSerializer {

@@ -1,8 +1,7 @@
-import { Post, Topic } from "../models";
+import { Post, Topic } from "../modules/core";
 
 export interface OnPostCreatedDTO {
     post: Post;
-    topic: Topic;
 }
 
 export interface OnPostDeleted {

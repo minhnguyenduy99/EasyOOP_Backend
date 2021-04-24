@@ -10,7 +10,7 @@ import {
     UpdateTopicDTO,
 } from "../dtos";
 import { BaseLimiter } from "../helpers";
-import { Post, Topic } from "../models";
+import { Post, Topic } from "../modules/core/models";
 
 export interface ITopicService {
     createTopic(dto: CreateTopicDTO): Promise<CommitActionResult<Topic>>;

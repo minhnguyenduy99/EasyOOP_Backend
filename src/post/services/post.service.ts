@@ -1,15 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { EventEmitter2 } from "eventemitter2";
-import { Model, Types } from "mongoose";
+import { Model } from "mongoose";
 import {
     AggregateBuilder,
     LimitOptions as MongoLimitOption,
 } from "src/lib/database/mongo";
-import { POST_STATUSES, TAG_TYPES } from "../consts";
+import { POST_STATUSES, TAG_TYPES } from "../modules/core/consts";
 import {
-    CommitActionResult,
-    CreatePostDTO,
     LimitOptions,
     PaginatedResult,
     PostWithTagDTO,
@@ -17,10 +15,16 @@ import {
 } from "../dtos";
 import { POST_EVENTS } from "../events";
 import { PostFilterOptions, PostServiceExtender } from "../helpers";
-import { Post, PostMetadata, Topic } from "../models";
-import { PostMetadataService } from "./post-metadata.service";
-import { Tag, TagType } from "src/tag";
-import { ERRORS } from "../errors";
+import {
+    Post,
+    PostCoreService,
+    PostMetadata,
+    Topic,
+    CreatePostDTO,
+    CommitActionResult,
+} from "../modules/core";
+import { ERRORS } from "../modules/core";
+import { Tag } from "src/tag";
 
 export interface IPostService {
     createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>>;
@@ -44,10 +48,6 @@ export interface IPostService {
         limit?: LimitOptions,
     ): Promise<PostWithTagDTO>;
     deletePost(postId: string): Promise<CommitActionResult<string>>;
-
-    verifyDelete(postId: string): Promise<CommitActionResult<string>>;
-    verifyCreate(postId: string): Promise<CommitActionResult<string>>;
-    verifyUpdate(postId: string): Promise<CommitActionResult<string>>;
 }
 
 @Injectable()
@@ -58,22 +58,11 @@ export class PostService implements IPostService {
         @InjectModel(Tag.name) private tagModel: Model<Tag>,
         @InjectModel(PostMetadata.name)
         private postMetadataModel: Model<PostMetadata>,
-        private postMetadataService: PostMetadataService,
         private postExtender: PostServiceExtender,
+        private postCoreService: PostCoreService,
         private eventEmitter: EventEmitter2,
         private logger: Logger,
     ) {}
-
-    verifyDelete(postId: string): Promise<CommitActionResult<string>> {
-        throw new Error("Method not implemented.");
-    }
-
-    verifyCreate(postId: string): Promise<CommitActionResult<string>> {
-        throw new Error("Method not implemented.");
-    }
-    verifyUpdate(postId: string): Promise<CommitActionResult<string>> {
-        throw new Error("Method not implemented.");
-    }
 
     async getPosts(
         filterOptions: PostFilterOptions,
@@ -83,13 +72,11 @@ export class PostService implements IPostService {
         const builder = new AggregateBuilder();
         this.postExtender
             .filter(builder, filterOptions)
+            .sort(sort, builder)
             .groupWithTopic(builder)
             .groupWithTags(builder)
+            .groupWithMetadata(builder)
             .limit(builder, limit as MongoLimitOption);
-
-        builder.sort({
-            [sort.field]: sort.asc ? 1 : -1,
-        });
 
         const queryResult = await this.postModel
             .aggregate(builder.log(null).build())
@@ -103,24 +90,70 @@ export class PostService implements IPostService {
     }
 
     async createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>> {
-        return this.innerCreatePost(dto, POST_STATUSES.ACTIVE);
+        const post = await this.postCoreService.doesTopicHavePendingPost(
+            dto.topic_id,
+        );
+        if (post) {
+            return {
+                code: -7,
+                error: "Topic currently has pending post",
+            };
+        }
+        dto.post_status = POST_STATUSES.PENDING_CREATED;
+        const result = await this.postCoreService.createPost(dto);
+        if (result.error) {
+            return result;
+        }
+        this.eventEmitter.emitAsync(POST_EVENTS.POST_CREATED, {
+            post: result.data,
+        });
+        return result;
+    }
+
+    async updatePendingPost(postId: string, dto: CreatePostDTO) {
+        const post = await this.postCoreService.getPostById(postId);
+        if (!post) {
+            return {
+                code: -1,
+                error: "Post not found",
+            };
+        }
+        if (
+            ![
+                POST_STATUSES.PENDING_CREATED,
+                POST_STATUSES.PENDING_UPDATED,
+            ].includes(post.post_status)
+        ) {
+            return {
+                code: -2,
+                error: "Post status is invalid",
+            };
+        }
+        dto["post_id"] = postId;
+        const [newPost] = await Promise.all([
+            this.postCoreService.createPost(dto),
+            this.postCoreService.destroyPost(post),
+        ]);
+        return newPost;
     }
 
     async updatePost(
         postId: string,
         dto: CreatePostDTO,
     ): Promise<CommitActionResult<Post>> {
-        const post = await this.postModel.findById(postId);
+        const post = await this.postModel.findOne({
+            post_id: postId,
+            post_status: POST_STATUSES.ACTIVE,
+        });
         if (!post) {
             return {
                 code: -10,
                 error: "Post not found",
             };
         }
-        const createPostResult = await this.innerCreatePost(
-            dto,
-            POST_STATUSES.PENDING_UPDATED,
-        );
+        dto["post_id"] = postId;
+        dto.post_status = POST_STATUSES.PENDING_UPDATED;
+        const createPostResult = await this.postCoreService.createPost(dto);
         if (createPostResult.error) {
             return createPostResult;
         }
@@ -153,6 +186,7 @@ export class PostService implements IPostService {
         builder
             .match({
                 post_id: topic.first_post_id,
+                post_status: POST_STATUSES.ACTIVE,
             })
             .aggregate({
                 $facet: {
@@ -279,6 +313,9 @@ export class PostService implements IPostService {
         post.post_status = POST_STATUSES.PENDING_DELETED;
         try {
             await post.save();
+            this.eventEmitter.emitAsync(POST_EVENTS.POST_DELETED, {
+                post,
+            });
             return {
                 code: 0,
                 data: postId,
@@ -287,93 +324,5 @@ export class PostService implements IPostService {
             this.logger.error(err);
             return ERRORS.ServiceError;
         }
-    }
-
-    protected async innerCreatePost(
-        dto: CreatePostDTO,
-        postStatus: number,
-    ): Promise<CommitActionResult<Post>> {
-        const [topic, post, tagsValid] = await Promise.all([
-            this.topicModel.findById(dto.topic_id),
-            (dto?.previous_post_id
-                ? this.doesPostExist(dto.previous_post_id)
-                : Promise.resolve(true)) as Promise<unknown>,
-            this.tagsValid(dto.tags),
-        ]);
-        if (!topic || !post) {
-            if (!topic) {
-                return {
-                    code: -1,
-                    error: "Topic is invalid",
-                };
-            } else {
-                return {
-                    code: -2,
-                    error: "Previous post ID is invalid",
-                };
-            }
-        }
-        if (!tagsValid) {
-            return {
-                code: -3,
-                error: "Tags are invalid",
-            };
-        }
-        const { content_file, thumbnail_file, ...postDTO } = dto;
-        // Create post metadata
-        const createMetaResult = await this.postMetadataService.create({
-            content_file,
-            thumbnail_file,
-        });
-        if (createMetaResult.error) {
-            return {
-                code: -4,
-                error: createMetaResult.error,
-            };
-        }
-
-        try {
-            const inputDoc = {
-                ...postDTO,
-                post_metadata_id: createMetaResult.data._id,
-                topic_id: topic._id,
-                post_status: postStatus,
-            };
-            const post = await this.postModel.create(inputDoc);
-            this.eventEmitter.emitAsync(POST_EVENTS.POST_CREATED, {
-                post,
-                topic,
-            });
-            return {
-                code: 0,
-                data: post,
-            };
-        } catch (err) {
-            this.logger.error(err);
-            return ERRORS.ServiceError;
-        }
-    }
-
-    protected async doesPostExist(postId: string) {
-        const post = await this.postModel.findOne(
-            {
-                post_id: postId,
-            },
-            {
-                post_id: 1,
-            },
-        );
-        return post ?? false;
-    }
-
-    protected async tagsValid(tags: string[]) {
-        // const foundTags = await this.tagModel.find({
-        //     tag_id: {
-        //         $in: tags,
-        //     },
-        // });
-        // console.log(foundTags);
-        // return foundTags.length === tags.length;
-        return true;
     }
 }

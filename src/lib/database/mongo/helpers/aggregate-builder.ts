@@ -94,6 +94,7 @@ export class AggregateBuilder {
             single = true,
             pipeline = [],
             mergeObject = false,
+            mergeOn = "ROOT",
             outer = true,
         } = option;
         let from;
@@ -133,7 +134,7 @@ export class AggregateBuilder {
             innerMatch = null,
             removeLookupField = null;
         const mergeObj = {
-            [localField]: { $arrayElemAt: [`$${as}`, 0] },
+            [as]: { $arrayElemAt: [`$${as}`, 0] },
         };
         if (!outer) {
             innerMatch = {
@@ -144,14 +145,26 @@ export class AggregateBuilder {
         }
         if (single) {
             replaceRoot = {
-                $replaceRoot: {
-                    newRoot: {
-                        $mergeObjects: [
-                            "$$ROOT",
-                            mergeObject ? mergeObj[localField] : mergeObj,
-                        ],
+                ...(mergeOn === "ROOT" && {
+                    $replaceRoot: {
+                        newRoot: {
+                            $mergeObjects: [
+                                "$$ROOT",
+                                mergeObject ? mergeObj[as] : mergeObj,
+                            ],
+                        },
                     },
-                },
+                }),
+                ...(mergeOn !== "ROOT" && {
+                    $set: {
+                        [mergeOn]: {
+                            $mergeObjects: [
+                                `$${mergeOn}`,
+                                mergeObject ? mergeObj[as] : mergeObj,
+                            ],
+                        },
+                    },
+                }),
             };
             if (mergeObject) {
                 removeLookupField = {

@@ -1,0 +1,1 @@
+export { MongoDataLoaderModule } from "./module";

@@ -6,7 +6,7 @@ export const TAG_TYPES = {
 
 export const POST_STATUSES = {
     ACTIVE: 0,
-    PENDING_CREATE: 1,
+    PENDING_CREATED: 1,
     PENDING_UPDATED: 2,
     PENDING_DELETED: 3,
 };

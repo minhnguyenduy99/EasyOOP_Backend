@@ -9,7 +9,7 @@ export const CommonResponse = (
     type?: Type<any>,
     opts?: ResponseOptions,
 ): Type<any> => {
-    const { dataTransform } = opts ?? {};
+    const { dataTransform = (obj) => obj } = opts ?? {};
 
     class CommonResponse {
         code: number;
