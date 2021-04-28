@@ -15,3 +15,9 @@ export interface AuthData {
     type?: PolicyActionType;
     resources?: string | string[];
 }
+
+export interface TokenAuthDataHandlerOptions {
+    dataField: string;
+    tokenField?: string;
+    from?: "cookies" | "headers";
+}

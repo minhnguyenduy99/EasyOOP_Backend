@@ -12,7 +12,7 @@ import { AuthData, AuthDataHandler, ResourceHandler } from "../interfaces";
 export abstract class BaseAuthDataHandler implements AuthDataHandler {
     constructor(protected reflector: Reflector) {}
 
-    getAuthData(context: ExecutionContext): AuthData | Promise<AuthData> {
+    async getAuthData(context: ExecutionContext): Promise<AuthData> {
         const req = context.switchToHttp().getRequest() as Request;
         const entityAction = this.reflector.get<string[]>(
             DECORATOR_ACTION,
@@ -36,9 +36,11 @@ export abstract class BaseAuthDataHandler implements AuthDataHandler {
             return null;
         }
 
+        const princialId = await Promise.resolve(this.getPrincipalId(req));
+
         if (type === ActionType.role) {
             return {
-                principal_id: this.getPrincipalId(req),
+                principal_id: princialId,
                 entity_name: entityName,
                 action_name: action,
                 type: type,
@@ -46,7 +48,7 @@ export abstract class BaseAuthDataHandler implements AuthDataHandler {
         }
 
         return {
-            principal_id: this.getPrincipalId(req),
+            principal_id: princialId,
             entity_name: entityName,
             action_name: action,
             type: type as PolicyActionType,
@@ -54,5 +56,5 @@ export abstract class BaseAuthDataHandler implements AuthDataHandler {
         };
     }
 
-    protected abstract getPrincipalId(req: Request): string;
+    protected abstract getPrincipalId(req: Request): string | Promise<string>;
 }

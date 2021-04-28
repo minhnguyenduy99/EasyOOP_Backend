@@ -16,6 +16,7 @@ import { Q8AModule } from "./q8a";
 import { MenuModule } from "./menu";
 import { AuthFacebookModule } from "./lib/authentication/facebook";
 import { GoogleModule } from "./lib/authentication/google";
+import { AuthorizationModule } from "./lib/authorization";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -42,6 +43,10 @@ import { GoogleModule } from "./lib/authentication/google";
             },
             inject: [APP_ENV_CONFIG],
         }),
+        AuthorizationModule.forRoot({
+            roles: ["creator", "manager", "viewer"],
+        }),
+        // RoleManagementModule,
         ChatbotModule,
         PostModule,
         Q8AModule,
