@@ -6,6 +6,8 @@ export interface ModelSerializerOptions extends ToObjectOptions {
     modelOption?: ToObjectOptions;
 }
 
+const ToObjectFunction = (data: any, options?: any) => data.toObject(options);
+const LiteralObjectFunction = (partial) => partial;
 export abstract class BaseModelSerializer extends BaseSerializer<Document> {
     @Exclude()
     public _id: any;
@@ -14,7 +16,9 @@ export abstract class BaseModelSerializer extends BaseSerializer<Document> {
     public __v: any;
 
     constructor(partial: Partial<Document>, options?: ToObjectOptions) {
-        const toObject = partial?.toObject ?? (() => partial);
-        super(toObject(options ?? {}));
+        const transformer = partial.toObject
+            ? ToObjectFunction
+            : LiteralObjectFunction;
+        super(transformer(partial, options));
     }
 }
