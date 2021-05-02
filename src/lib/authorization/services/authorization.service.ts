@@ -79,7 +79,9 @@ export class AuthorizationService implements IAuthorizationService {
                 },
                 justOne: true,
             });
-        return principal ? true : false;
+        return principal && principal?.["role_action_policies"]?.length > 0
+            ? true
+            : false;
     }
 
     /**
