@@ -17,6 +17,8 @@ import { MenuModule } from "./menu";
 import { AuthFacebookModule } from "./lib/authentication/facebook";
 import { GoogleModule } from "./lib/authentication/google";
 import { AuthorizationModule } from "./lib/authorization";
+import { RoleManagementModule } from "./role-management";
+import { AuthenticationModule } from "./lib/authentication";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -51,8 +53,10 @@ import { AuthorizationModule } from "./lib/authorization";
         PostModule,
         Q8AModule,
         MenuModule,
-        AuthFacebookModule,
-        GoogleModule,
+        AuthenticationModule.useAuthentication("facebook")
+            .useAuthentication("google")
+            .forRoot(),
+        RoleManagementModule,
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],
