@@ -54,7 +54,7 @@ export class AuthorizationCoreService {
             await session.commitTransaction();
         } catch (err) {
             await session.abortTransaction();
-            this.logger.error(err);
+            this.logger.error(err.stack);
         } finally {
             session.endSession();
         }
@@ -126,14 +126,18 @@ export class AuthorizationCoreService {
     }
 
     protected async syncRolePolicies() {
-        const data = Object.keys(this.policyAssigns).map((role) => {
-            const assign = this.policyAssigns[role];
-            const data = assign.map((rolePolicy) => ({
-                role_name: role,
-                entity_name: rolePolicy[0],
-                entity_policy_name: rolePolicy[1],
-            }));
-            return data;
+        let data = [];
+        Object.keys(this.policyAssigns).forEach((role) => {
+            const eachRoleAssigns = this.policyAssigns[role];
+            console.log(eachRoleAssigns);
+            eachRoleAssigns.forEach((assign) => {
+                const { entity, policies } = assign;
+                data.push({
+                    role_name: role,
+                    entity_name: entity,
+                    entity_policy_names: policies,
+                });
+            });
         });
 
         let rolePolicies = [];
@@ -154,17 +158,19 @@ export class AuthorizationCoreService {
     protected async syncRoleActionPolicies() {
         const rolePolicies = await this.rolePolicyModel
             .find()
-            .populate("entity_policy");
+            .populate("entity_policies");
         const roleActionPolicies = [];
         rolePolicies.forEach((rolePolicy) => {
-            rolePolicy.entity_policy.actions.forEach(({ name, type }) => {
-                if (type === ActionType.resource) {
-                    return;
-                }
-                roleActionPolicies.push({
-                    role_name: rolePolicy.role_name,
-                    entity_name: rolePolicy.entity_name,
-                    action_name: name,
+            rolePolicy.entity_policies.forEach((entityPolicy) => {
+                entityPolicy.actions.forEach(({ name, type }) => {
+                    if (type === ActionType.resource) {
+                        return;
+                    }
+                    roleActionPolicies.push({
+                        role_name: rolePolicy.role_name,
+                        entity_name: rolePolicy.entity_name,
+                        action_name: name,
+                    });
                 });
             });
         });

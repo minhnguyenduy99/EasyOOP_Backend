@@ -24,5 +24,5 @@
  * }
  */
 export interface RolePolicyAssign {
-    [roleName: string]: string[][];
+    [roleName: string]: { entity: string; policies: string[] }[];
 }

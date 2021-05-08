@@ -24,9 +24,9 @@ export type EntityPolicyDTO = Partial<
 
 export interface RolePolicyDTO
     extends Partial<
-        Pick<RolePolicy, "role_name" | "entity_name" | "entity_policy_name">
+        Pick<RolePolicy, "role_name" | "entity_name" | "entity_policy_names">
     > {
-    entity_policy?: EntityPolicyDTO;
+    entity_policies?: EntityPolicyDTO[];
 }
 
 export type RoleActionPolicyDTO = Partial<

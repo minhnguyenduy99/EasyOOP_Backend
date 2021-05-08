@@ -4,7 +4,7 @@ import { EntityPolicy } from "./entity-policy.model";
 
 @Schema()
 export class RolePolicy extends Document {
-    entity_policy: EntityPolicy;
+    entity_policies: EntityPolicy[];
 
     @Prop({
         required: true,
@@ -18,17 +18,18 @@ export class RolePolicy extends Document {
 
     @Prop({
         required: true,
+        type: [String],
     })
-    entity_policy_name: string;
+    entity_policy_names: string[];
 }
 
 export const RolePolicySchema = SchemaFactory.createForClass(RolePolicy);
 
-RolePolicySchema.virtual("entity_policy", {
+RolePolicySchema.virtual("entity_policies", {
     ref: EntityPolicy.name,
-    localField: "entity_policy_name",
+    localField: "entity_policy_names",
     foreignField: "policy_name",
-    justOne: true,
+    justOne: false,
 });
 
 RolePolicySchema.index(

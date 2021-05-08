@@ -52,6 +52,7 @@ export class AuthorizationService implements IAuthorizationService {
      * @param type
      */
     async authorize(type: PolicyActionType, authData: AuthData) {
+        console.log(authData);
         if (type === ActionType.role) {
             return this.authorizeByRolePolicy(authData);
         }
@@ -118,10 +119,14 @@ export class AuthorizationService implements IAuthorizationService {
     }
 
     protected doesActionExist(rolePolicy: RolePolicyDTO, actionName: string) {
-        const actionIndex = rolePolicy.entity_policy.actions.findIndex(
-            (action) => action.name === actionName,
-        );
-        return actionIndex !== -1;
+        for (let policy of rolePolicy.entity_policies) {
+            for (let action in policy.actions) {
+                if (action === actionName) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -379,17 +384,19 @@ export class AuthorizationService implements IAuthorizationService {
         );
         const principalPolicies = [];
         rolePolicies.forEach((rolePolicy) => {
-            rolePolicy.entity_policy?.actions.forEach((action) => {
-                if (action.type === ActionType.role) {
-                    return;
-                }
-                const data = {
-                    principal_id: principal.principal_id,
-                    entity_name: rolePolicy.entity_name,
-                    action_name: action.name,
-                    resources: selfAdded ? [principal.principal_id] : [],
-                };
-                principalPolicies.push(data);
+            rolePolicy.entity_policies.forEach((policy) => {
+                policy.actions.forEach((action) => {
+                    if (action.type === ActionType.role) {
+                        return;
+                    }
+                    const data = {
+                        principal_id: principal.principal_id,
+                        entity_name: rolePolicy.entity_name,
+                        action_name: action.name,
+                        resources: selfAdded ? [principal.principal_id] : [],
+                    };
+                    principalPolicies.push(data);
+                });
             });
         });
         try {
@@ -411,7 +418,7 @@ export class AuthorizationService implements IAuthorizationService {
                 role_name: role,
             })
             .populate({
-                path: "entity_policy",
+                path: "entity_policies",
             });
         if (rolePolicies.length == 0)
             this.logger.warn(`role ${role} not found or not have any policies`);
