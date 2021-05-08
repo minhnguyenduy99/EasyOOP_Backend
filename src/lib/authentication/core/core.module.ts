@@ -19,6 +19,7 @@ import { UserEventsHandler } from "./events/user-events.handler";
 import configLoader from "./core.config";
 import { AuthTestController } from "./auth-test.controller";
 import { AccessTokenStrategy } from "./strategies";
+import { CloudinaryModule } from "src/lib/cloudinary";
 
 @Module({
     imports: [
@@ -33,6 +34,9 @@ import { AccessTokenStrategy } from "./strategies";
         ]),
         EventEmitterModule,
         AuthorizationModule.forFeature({}),
+        CloudinaryModule.forFeature({
+            folder: "USERS",
+        }),
     ],
     providers: [
         {

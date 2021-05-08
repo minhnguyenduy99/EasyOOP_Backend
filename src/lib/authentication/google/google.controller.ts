@@ -5,21 +5,31 @@ import {
     HttpStatus,
     Req,
     UseGuards,
+    UseInterceptors,
 } from "@nestjs/common";
-import { Serialize } from "src/lib/helpers";
+import { ResponseSerializerInterceptor, Serialize } from "src/lib/helpers";
 import { Request } from "express";
-import { CreateUserDTO, GlobalAuthUserService } from "../core";
-import { GoogleAuthGuard } from "./google.guard";
-import { GoogleUserService } from "./google.service";
+import {
+    AuthenticationService,
+    AuthUserDecorator,
+    CreateUserDTO,
+    GlobalAuthUserService,
+    LoginAttachTokenInterceptor,
+    LoginResultDTO,
+} from "../core";
 import { GoogleUser } from "./interfaces";
 import { AuthGoogleUserDTO } from "./dto";
 import { CommonResponse, ToObjectTransform } from "src/lib/types";
+import { GoogleAuthGuard, GoogleTokenIdGuard } from "./guards";
+import { GoogleUserService } from "./services";
 
 @Controller("/auth/google")
-@UseGuards(GoogleAuthGuard)
+// @UseGuards(GoogleAuthGuard)
+@UseInterceptors(ResponseSerializerInterceptor)
 export class GoogleController {
     constructor(
         private readonly googleUserService: GoogleUserService,
+        private authService: AuthenticationService,
         private userService: GlobalAuthUserService,
     ) {}
 
@@ -49,5 +59,27 @@ export class GoogleController {
             throw new BadRequestException(result);
         }
         return result;
+    }
+
+    @Get("/login-with-token")
+    @UseInterceptors(LoginAttachTokenInterceptor)
+    @Serialize(CommonResponse(LoginResultDTO()))
+    @UseGuards(GoogleTokenIdGuard)
+    async authByTokenId(@AuthUserDecorator("user") user: GoogleUser) {
+        let googleUser = await this.userService.getUserById(user.id);
+        if (!googleUser) {
+            const result = await this.googleUserService.createUser(
+                user as CreateUserDTO,
+            );
+            if (result.error) {
+                throw new BadRequestException(result);
+            }
+            googleUser = result.data;
+        }
+        const loginResult = await this.authService.logIn(googleUser);
+        if (loginResult.error) {
+            throw new BadRequestException(loginResult);
+        }
+        return loginResult;
     }
 }

@@ -1,16 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { ModuleRef } from "@nestjs/core";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { EncryptService } from "src/lib/encrypt";
-import {
-    BaseAuthUserService,
-    AuthUser,
-    UserProfileDTO,
-    AuthUserDTO,
-    UserVerifier,
-} from "../core";
-import { GoogleUser } from "./interfaces";
+import { Injectable } from "@nestjs/common";
+import { AuthUserDTO, BaseAuthUserService, UserProfileDTO } from "../../core";
+import { GoogleUser } from "../interfaces";
 
 @Injectable()
 export class GoogleUserService extends BaseAuthUserService {
@@ -32,11 +22,11 @@ export class GoogleUserService extends BaseAuthUserService {
     protected extractProfile<User extends GoogleUser>(
         dto: User,
     ): UserProfileDTO | Promise<UserProfileDTO> {
-        const { given_name, family_name, displayName, picture } = dto;
+        const { given_name, family_name, picture } = dto;
         return {
             first_name: family_name,
             last_name: given_name,
-            display_name: displayName,
+            display_name: `${family_name} ${given_name}`,
             profile_pic: picture,
         };
     }

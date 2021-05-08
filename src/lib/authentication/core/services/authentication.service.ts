@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { EncryptService } from "src/lib/encrypt";
 import { GlobalAuthUserService } from "./auth-user.service";
@@ -20,7 +20,8 @@ export interface IAuthenticationService {
         userId: string,
         role: string,
         payload?: any,
-    ): Promise<ServiceResult<LoginResult>>;
+    ): Promise<ServiceResult<AuthUser>>;
+    logOut(userId: string): Promise<void>;
     validateUser(
         usernameOrEmail: string,
         validateOptions?: ValidateUserOptions,
@@ -41,7 +42,25 @@ export class AuthenticationService implements IAuthenticationService {
         private readonly tokenConfig: TokenConfig,
         private userService: GlobalAuthUserService,
         @InjectModel(AuthUser.name) private userModel: Model<AuthUser>,
+        private logger: Logger,
     ) {}
+
+    async logOut(userOrUserId: string | AuthUser): Promise<void> {
+        const user = await this.getAuthUserInstance(userOrUserId);
+        if (!this.isUserLogined(user)) {
+            return;
+        }
+        user.login_status = LOGIN_STATUSES.UNLOGINED;
+        user.hash_refresh_token = null;
+        user.active_role = null;
+        user.token_expired = null;
+        try {
+            await user.save();
+        } catch (err) {
+            this.logger.error(err);
+            return;
+        }
+    }
 
     async validateUser(
         usernameOrEmail: string,
@@ -81,6 +100,8 @@ export class AuthenticationService implements IAuthenticationService {
 
     async validateAccessTokenPayload(payload: AccessTokenPayload) {
         const user = await this.userService.getUserById(payload.user_id);
+        console.log(payload);
+        console.log(user);
         if (!user || user.active_role !== payload.active_role) {
             return null;
         }
@@ -125,7 +146,7 @@ export class AuthenticationService implements IAuthenticationService {
         const { accessTokenExpired, accessTokenSecretKey } = this.tokenConfig;
         const accessToken = await this.jwtService.sign(accessTokenPayload, {
             secret: accessTokenSecretKey,
-            expiresIn: accessTokenExpired,
+            expiresIn: parseInt(accessTokenExpired),
         });
         return accessToken;
     }
@@ -134,7 +155,7 @@ export class AuthenticationService implements IAuthenticationService {
         userId: string | AuthUser,
         role?: string,
         payload?: any,
-    ): Promise<ServiceResult<LoginResult>> {
+    ): Promise<ServiceResult<AuthUser>> {
         let user: AuthUser = userId as AuthUser;
         role = role ?? this.userService.getDefaultRole();
 
@@ -147,6 +168,7 @@ export class AuthenticationService implements IAuthenticationService {
                 error: "User is invalid",
             };
         }
+        user.active_role = role;
         try {
             const [refreshToken, accessToken] = await Promise.all([
                 this.generateRefreshToken(user),
@@ -165,13 +187,11 @@ export class AuthenticationService implements IAuthenticationService {
                 expire,
                 role,
             });
+            user.accessToken = accessToken;
+            user.refreshToken = refreshToken;
             return {
                 code: 0,
-                data: {
-                    user,
-                    accessToken,
-                    refreshToken,
-                },
+                data: user,
             };
         } catch (err) {
             console.log(err);
@@ -217,5 +237,16 @@ export class AuthenticationService implements IAuthenticationService {
 
     protected isUserLogined(user: AuthUser | AuthUserDTO) {
         return user.login_status === LOGIN_STATUSES.LOGINED;
+    }
+
+    protected async getAuthUserInstance(
+        userOrUserId: string | AuthUser,
+    ): Promise<AuthUser> {
+        if (typeof userOrUserId === "string") {
+            return this.userModel.findOne({
+                user_id: userOrUserId,
+            });
+        }
+        return userOrUserId;
     }
 }

@@ -68,6 +68,18 @@ export class AuthUser extends Document {
         default: {},
     })
     profile: any;
+
+    @Prop({
+        required: false,
+        default: null,
+    })
+    accessToken?: string;
+
+    @Prop({
+        required: false,
+        default: null,
+    })
+    refreshToken?: string;
 }
 
 export const AuthUserSchema = SchemaFactory.createForClass(AuthUser);

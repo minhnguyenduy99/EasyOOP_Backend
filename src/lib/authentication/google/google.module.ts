@@ -4,8 +4,8 @@ import { AuthenticationCoreModule } from "../core";
 import { PROVIDERS } from "./consts";
 import { ConfigLoader, CONFIG_KEYS } from "./google.config";
 import { GoogleController } from "./google.controller";
-import { GoogleUserService } from "./google.service";
 import { GoogleStrategy } from "./google.strategy";
+import { GoogleAuthService, GoogleUserService } from "./services";
 
 @Module({
     imports: [
@@ -30,6 +30,7 @@ import { GoogleStrategy } from "./google.strategy";
         },
         GoogleStrategy,
         GoogleUserService,
+        GoogleAuthService,
     ],
     controllers: [GoogleController],
 })

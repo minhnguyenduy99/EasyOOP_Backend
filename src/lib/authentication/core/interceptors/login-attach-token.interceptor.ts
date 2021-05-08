@@ -17,27 +17,22 @@ export class LoginAttachTokenInterceptor implements NestInterceptor {
         const res = context.switchToHttp().getResponse() as Response;
         return next.handle().pipe(
             map((data) => {
-                const {
-                    data: { user, accessToken, refreshToken },
-                } = data;
-                if (accessToken) {
-                    this.setAccessTokenCookie(res, accessToken);
-                }
-                if (refreshToken) {
-                    this.setRefreshTokenCookie(
-                        res,
-                        refreshToken,
-                        new Date(user.token_expired),
-                    );
-                }
+                const { data: user } = data;
+                this.setAccessTokenCookie(res, user.accessToken);
+                this.setRefreshTokenCookie(
+                    res,
+                    user.refreshToken,
+                    new Date(user.token_expired),
+                );
                 return data;
             }),
         );
     }
 
-    protected setAccessTokenCookie(res: any, value) {
+    protected setAccessTokenCookie(res: Response, value) {
         res.cookie(REQUEST_KEYS.ACCESS_TOKEN_COOKIE, value, {
-            httpOnly: true,
+            httpOnly: false,
+            maxAge: 5 * 60 * 1000,
         });
     }
 

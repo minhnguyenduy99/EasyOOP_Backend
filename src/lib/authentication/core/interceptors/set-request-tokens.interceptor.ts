@@ -8,6 +8,7 @@ import { Request } from "express";
 import { Observable } from "rxjs";
 import { REQUEST_KEYS } from "../consts";
 import { AuthUserDTO } from "../dtos";
+import { AuthUser } from "../models";
 import { AccessTokenExtractor, RefreshTokenExtractor } from "../utils";
 
 export class SetRequestTokensInterceptor implements NestInterceptor {
@@ -16,9 +17,11 @@ export class SetRequestTokensInterceptor implements NestInterceptor {
         next: CallHandler<any>,
     ): Promise<Observable<any>> {
         const req = context.switchToHttp().getRequest() as Request;
-        const user = req["user"] as AuthUserDTO;
+        const user = req["user"] as AuthUser;
+        user.refreshToken = RefreshTokenExtractor(req);
+        user.accessToken = user.accessToken ?? AccessTokenExtractor(req);
         req[REQUEST_KEYS.AUTH_TOKEN] = {
-            accessToken: AccessTokenExtractor(req) ?? user?.accessToken,
+            accessToken: user?.accessToken,
             refreshToken: RefreshTokenExtractor(req),
         };
         return next.handle();

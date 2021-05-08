@@ -8,13 +8,14 @@ export const AuthUserDecorator = (
     field = "user",
     options?: AuthUserOptions,
 ) => {
-    const _opts = options ?? {
-        serialize: false,
-    };
+    const { serialize = false } = options ?? {};
     const paramDecorator = createParamDecorator(
         (data: unknown, ctx: ExecutionContext) => {
             const req = ctx.switchToHttp().getRequest();
-            return req[field];
+            if (!serialize) {
+                return req[field];
+            }
+            return req[field]?.toObject() ?? req[field];
         },
     )();
     return paramDecorator;

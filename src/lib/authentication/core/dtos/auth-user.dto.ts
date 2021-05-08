@@ -1,4 +1,4 @@
-import { Exclude } from "class-transformer";
+import { Exclude, Expose } from "class-transformer";
 import { BaseModelSerializer } from "src/lib/helpers";
 
 export class AuthUserDto extends BaseModelSerializer {
@@ -22,4 +22,9 @@ export class AuthUserDto extends BaseModelSerializer {
 
     @Exclude()
     type: string;
+
+    @Expose({
+        name: "access_token",
+    })
+    accessToken?: string;
 }

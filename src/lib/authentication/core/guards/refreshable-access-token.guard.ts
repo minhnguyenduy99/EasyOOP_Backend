@@ -21,17 +21,23 @@ export class RefreshableAccessTokenGuard extends BaseAuthGuard(
         if (user) {
             return user;
         }
-        const authError =
-            err ||
-            new UnauthorizedException({
-                error: "Invalid access token",
-            });
-        if (err || info) {
-            if (
-                !(err instanceof TokenExpiredError) &&
-                !(info instanceof TokenExpiredError)
-            ) {
-                throw authError;
+        console.log(info);
+        console.log(err);
+        console.log("refresh user access token");
+        // The access token is presented but invalid
+        if (!this.isNoAuthTokenError(info)) {
+            const authError =
+                err ||
+                new UnauthorizedException({
+                    error: "Invalid access token",
+                });
+            if (err || info) {
+                if (
+                    !(err instanceof TokenExpiredError) &&
+                    !(info instanceof TokenExpiredError)
+                ) {
+                    throw authError;
+                }
             }
         }
         const req = context.switchToHttp().getRequest() as Request;
@@ -39,7 +45,7 @@ export class RefreshableAccessTokenGuard extends BaseAuthGuard(
         const accessToken = await this.authService.generateAccessToken(
             validatedUser,
         );
-        validatedUser["accessToken"] = accessToken;
+        validatedUser.accessToken = accessToken;
         return validatedUser;
     }
 
@@ -59,5 +65,9 @@ export class RefreshableAccessTokenGuard extends BaseAuthGuard(
             });
         }
         return validatedUser;
+    }
+
+    protected isNoAuthTokenError(error) {
+        return error?.message?.toLowerCase() === "no auth token";
     }
 }

@@ -65,7 +65,7 @@ export class FacebookAuthController {
     @Get("/login-with-token")
     @UseGuards(FacebookTokenGuard)
     @UseInterceptors(LoginAttachTokenInterceptor)
-    @Serialize(CommonResponse(LoginResultDTO()))
+    @Serialize(CommonResponse(AuthUserDto))
     async loginWithFacebookToken(@Req() req: Request) {
         const fbUser = req["user"] as FacebookUser;
         let user = await this.userService.getUserById(fbUser.id);

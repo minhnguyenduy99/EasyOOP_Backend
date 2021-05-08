@@ -8,7 +8,6 @@ export interface GoogleAuthConfig {
 export interface GoogleUser {
     provider?: "google";
     id?: string;
-    displayName?: string;
     given_name?: string;
     family_name?: string;
     email?: string;

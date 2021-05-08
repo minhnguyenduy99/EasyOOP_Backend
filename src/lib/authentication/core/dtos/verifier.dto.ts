@@ -1,4 +1,4 @@
-import { AuthUserDTO } from "../../auth-local";
+import { AuthUserDTO } from "./auth.dto";
 
 export interface CreateVerifierDTO {
     expired_in?: number;
