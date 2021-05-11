@@ -18,7 +18,7 @@ export class AuthTestController {
 
     @Post("/login")
     @UseInterceptors(LoginAttachTokenInterceptor)
-    @Serialize(CommonResponse(LoginResultDTO(AuthUserDto)))
+    @Serialize(CommonResponse(AuthUserDto))
     async login(@Body() body: any) {
         const { user_id } = body;
         const result = await this.authenticator.logIn(user_id);

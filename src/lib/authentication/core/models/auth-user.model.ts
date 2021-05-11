@@ -38,6 +38,9 @@ export class AuthUser extends Document {
     })
     type?: string;
 
+    @Prop()
+    created_date: number;
+
     @Prop({
         default: false,
     })
@@ -73,6 +76,12 @@ export class AuthUser extends Document {
         required: false,
         default: null,
     })
+    role_id?: string;
+
+    @Prop({
+        required: false,
+        default: null,
+    })
     accessToken?: string;
 
     @Prop({
@@ -84,6 +93,12 @@ export class AuthUser extends Document {
 
 export const AuthUserSchema = SchemaFactory.createForClass(AuthUser);
 
+AuthUserSchema.pre("save", function (next) {
+    if (this.isNew) {
+        this.created_date = Date.now();
+    }
+    next();
+});
 AuthUserSchema.index({
     user_id: 1,
 });

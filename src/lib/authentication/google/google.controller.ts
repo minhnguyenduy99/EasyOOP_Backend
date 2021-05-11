@@ -12,15 +12,15 @@ import { Request } from "express";
 import {
     AuthenticationService,
     AuthUserDecorator,
+    AuthUserDto,
     CreateUserDTO,
     GlobalAuthUserService,
     LoginAttachTokenInterceptor,
-    LoginResultDTO,
 } from "../core";
 import { GoogleUser } from "./interfaces";
 import { AuthGoogleUserDTO } from "./dto";
 import { CommonResponse, ToObjectTransform } from "src/lib/types";
-import { GoogleAuthGuard, GoogleTokenIdGuard } from "./guards";
+import { GoogleTokenIdGuard } from "./guards";
 import { GoogleUserService } from "./services";
 
 @Controller("/auth/google")
@@ -63,7 +63,7 @@ export class GoogleController {
 
     @Get("/login-with-token")
     @UseInterceptors(LoginAttachTokenInterceptor)
-    @Serialize(CommonResponse(LoginResultDTO()))
+    @Serialize(CommonResponse(AuthUserDto))
     @UseGuards(GoogleTokenIdGuard)
     async authByTokenId(@AuthUserDecorator("user") user: GoogleUser) {
         let googleUser = await this.userService.getUserById(user.id);

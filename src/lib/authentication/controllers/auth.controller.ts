@@ -4,16 +4,20 @@ import {
     Post,
     UseInterceptors,
     Get,
+    BadRequestException,
 } from "@nestjs/common";
 import { ResponseSerializerInterceptor, Serialize } from "src/lib/helpers";
+import { CommonResponse } from "src/lib/types";
 import {
     AuthenticationService,
     AuthUserDecorator,
     AuthUserDto,
+    LoginResultDTO,
     TokenAuth,
 } from "../core";
 
 @Controller("auth")
+@UseInterceptors(ResponseSerializerInterceptor)
 export class AuthController {
     constructor(private authService: AuthenticationService) {}
 
@@ -26,13 +30,19 @@ export class AuthController {
         this.authService.logOut(user);
     }
 
-    @Get("/info")
+    @Post("/relogin")
     @TokenAuth()
-    @UseInterceptors(ResponseSerializerInterceptor)
-    @Serialize(AuthUserDto)
-    async getAuthInfo(
-        @AuthUserDecorator("user", { serialize: true }) user: any,
-    ) {
-        return user;
+    @Serialize(CommonResponse(AuthUserDto))
+    async reloginAsDefault(@AuthUserDecorator("user") user: any) {
+        const validatedUser = await this.authService.resetLoginStateToUser(
+            user,
+        );
+        if (!validatedUser) {
+            throw new BadRequestException();
+        }
+        return {
+            code: 0,
+            data: validatedUser,
+        };
     }
 }

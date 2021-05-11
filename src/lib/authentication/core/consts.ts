@@ -19,4 +19,5 @@ export const REQUEST_KEYS = {
     AUTH_TOKEN: "authToken",
     ACCESS_TOKEN_COOKIE: "accessToken",
     REFRESH_TOKEN_COOKIE: "refreshToken",
+    ROLE_COOKIE: "auth_role",
 };

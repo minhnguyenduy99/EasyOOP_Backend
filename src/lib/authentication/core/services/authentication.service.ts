@@ -11,7 +11,7 @@ import {
     TokenConfig,
 } from "../interfaces";
 import { AuthUser } from "../models";
-import { JwtTimeConverter } from "../utils";
+import { JwtTimeConverter, ServiceErrors } from "../utils";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 
@@ -31,6 +31,7 @@ export interface IAuthenticationService {
         payload: RefreshTokenPayload,
     ): Promise<AuthUser>;
     generateAccessToken(user: AuthUserDTO | AuthUser): Promise<string>;
+    resetLoginStateToUser(userOrId: string | AuthUser): Promise<AuthUser>;
 }
 
 @Injectable()
@@ -200,6 +201,18 @@ export class AuthenticationService implements IAuthenticationService {
                 error: "Login user failed",
             };
         }
+    }
+
+    async resetLoginStateToUser(
+        userOrId: string | AuthUser,
+    ): Promise<AuthUser> {
+        const user = await this.getAuthUserInstance(userOrId);
+        if (!user) {
+            return null;
+        }
+        const accesssToken = await this.generateAccessToken(user);
+        user.accessToken = accesssToken;
+        return user;
     }
 
     protected async updateUserLoginState(user: AuthUser | any, opts) {

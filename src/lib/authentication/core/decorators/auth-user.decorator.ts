@@ -1,4 +1,5 @@
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
+import { RoleIdExtractor } from "../utils";
 
 export interface AuthUserOptions {
     serialize?: boolean;

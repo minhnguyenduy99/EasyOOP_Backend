@@ -6,6 +6,8 @@ export const AccessTokenExtractor = (req) =>
 export const RefreshTokenExtractor = (req) =>
     req.cookies[REQUEST_KEYS.REFRESH_TOKEN_COOKIE];
 
+export const RoleIdExtractor = (req) => req.cookies[REQUEST_KEYS.ROLE_COOKIE];
+
 export const SetAuthToken = (req, { accessToken, refreshToken }) => {
     req[REQUEST_KEYS.AUTH_TOKEN] = {
         accessToken,

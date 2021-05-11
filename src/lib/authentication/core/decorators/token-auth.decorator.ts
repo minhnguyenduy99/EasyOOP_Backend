@@ -2,6 +2,7 @@ import { applyDecorators, UseGuards, UseInterceptors } from "@nestjs/common";
 import { AccessTokenGuard } from "../guards";
 import { RefreshableAccessTokenGuard } from "../guards";
 import {
+    AttachRoleInterceptor,
     AttachTokenInterceptor,
     ClearTokenCookieInterceptor,
     LoginAttachTokenInterceptor,
@@ -29,6 +30,7 @@ export const TokenAuth = (options?: TokenAuthOptions) => {
         } else {
             interceptors.push(AttachTokenInterceptor);
         }
+        interceptors.push(AttachRoleInterceptor);
     } else {
         interceptors.push(ClearTokenCookieInterceptor);
     }
