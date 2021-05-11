@@ -41,6 +41,8 @@ export class CreatorService extends BaseRoleService {
     }
 
     getCreatorById(creatorId: string) {
-        return this.findById(creatorId);
+        return this.findById(creatorId, {
+            groups: ["user"],
+        });
     }
 }

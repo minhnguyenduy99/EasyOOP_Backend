@@ -1,8 +1,8 @@
-import { Expose } from "class-transformer";
-import { BaseModelSerializer } from "src/lib/helpers";
+import { Exclude, Expose } from "class-transformer";
 import { RoleDTO } from "../role.dto";
 
-export class CreatorDTO extends BaseModelSerializer {
+export class CreatorDTO extends RoleDTO {
+    @Exclude()
     role_id: string;
     alias: string;
     user_id: string;

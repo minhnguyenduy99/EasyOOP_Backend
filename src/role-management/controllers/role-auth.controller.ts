@@ -17,7 +17,6 @@ import { CommonResponse } from "src/lib/types";
 import { RoleDTO } from "../dtos";
 import { ROLES, ERRORS } from "../modules/core";
 import { RoleAuthenticationService } from "../modules/role-authentication";
-import { AttachRoleInterceptor } from "../utils";
 
 @Controller("role-authentication")
 @UseInterceptors(ResponseSerializerInterceptor)
@@ -29,7 +28,6 @@ export class RoleAuthenticationController {
         isLogin: true,
     })
     @Serialize(CommonResponse(RoleDTO))
-    @UseInterceptors(AttachRoleInterceptor)
     async roleLogin(
         @Param("type") type: string,
         @AuthUserDecorator() authUser: AuthUserDTO,

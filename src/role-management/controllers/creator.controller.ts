@@ -58,7 +58,6 @@ export class CreatorController {
         @RoleUser() manager: RoleUserData,
         @Body(BodyValidationPipe) dto: CreateCreatorDTO,
     ) {
-        console.log(manager);
         const result = await this.creatorService.createCreator(userId, dto);
         if (result.error) {
             throw new BadRequestException(result);

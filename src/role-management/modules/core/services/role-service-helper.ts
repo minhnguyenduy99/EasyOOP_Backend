@@ -88,7 +88,7 @@ export class RoleServiceHelper {
             as: "user",
             outer: false,
             mergeObject: true,
-            removeFields: ["__v"],
+            removeFields: ["__v", "role_id"],
         });
         return this;
     }

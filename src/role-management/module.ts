@@ -4,6 +4,7 @@ import {
     CreatorController,
     ManagerController,
     RoleAuthenticationController,
+    UserController,
 } from "./controllers";
 import { RoleManagementCoreModule } from "./modules/core";
 import { RoleAuthenticationModule } from "./modules/role-authentication";
@@ -21,6 +22,7 @@ import { PaginationModule } from "src/lib/pagination";
         CreatorController,
         ManagerController,
         RoleAuthenticationController,
+        UserController,
     ],
 })
 export class RoleManagementModule {}
