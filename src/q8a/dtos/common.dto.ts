@@ -7,15 +7,3 @@ export interface CommitActionResult<Data> {
     data?: Data;
     error?: string;
 }
-
-export class LimitOptions {
-    @IsNumber()
-    @Transform(({ value }) => stringToNumber(value))
-    start: number;
-
-    @IsOptional()
-    @IsNumber()
-    @IsPositive()
-    @Transform(({ value }) => stringToNumber(value))
-    limit: number;
-}
