@@ -17,12 +17,20 @@ export class Tag extends Document {
         required: true,
     })
     tag_value: string;
+
+    @Prop({
+        required: false,
+        default: false,
+    })
+    used?: boolean;
 }
 
 export const TagSchema = SchemaFactory.createForClass(Tag);
 
 TagSchema.index({
     tag_value: "text",
+    tag_type: 1,
+    used: 1,
 });
 
 TagSchema.index({
