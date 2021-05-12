@@ -52,7 +52,6 @@ export class AuthorizationService implements IAuthorizationService {
      * @param type
      */
     async authorize(type: PolicyActionType, authData: AuthData) {
-        console.log(authData);
         if (type === ActionType.role) {
             return this.authorizeByRolePolicy(authData);
         }

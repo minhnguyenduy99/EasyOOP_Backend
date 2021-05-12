@@ -19,9 +19,6 @@ export function AuthorizeMethod(metadata: MethodAuthMetadata): MethodDecorator {
 
     const decorators = [];
 
-    decorators.push(
-        SetMetadata(DECORATOR_METHOD_TAG, MethodTagValues.Authorize),
-    );
     decorators.push(SetMetadata(DECORATOR_ACTION, [action, type]));
     if (resourceHandler) {
         decorators.push(

@@ -129,7 +129,6 @@ export class AuthorizationCoreService {
         let data = [];
         Object.keys(this.policyAssigns).forEach((role) => {
             const eachRoleAssigns = this.policyAssigns[role];
-            console.log(eachRoleAssigns);
             eachRoleAssigns.forEach((assign) => {
                 const { entity, policies } = assign;
                 data.push({
