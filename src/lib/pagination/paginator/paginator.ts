@@ -51,7 +51,7 @@ export default class Paginator implements IPaginator {
         return {
             page: page,
             next:
-                page >= pageCount && pageCount > 0
+                page >= pageCount || pageCount === 0
                     ? null
                     : this.constructPageQuery(page + 1, placeholders, queries),
             previous:

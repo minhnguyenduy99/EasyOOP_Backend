@@ -19,6 +19,7 @@ import { GoogleModule } from "./lib/authentication/google";
 import { AuthorizationModule } from "./lib/authorization";
 import { RoleManagementModule } from "./role-management";
 import { AuthenticationModule } from "./lib/authentication";
+import { PaginationModule } from "./lib/pagination";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -57,6 +58,14 @@ import { AuthenticationModule } from "./lib/authentication";
             .useAuthentication("google")
             .forRoot(),
         RoleManagementModule,
+        PaginationModule.forRootAsync({
+            useFactory: (appEnvConfig: AppConfigService) => {
+                return {
+                    baseURL: appEnvConfig.serverDomain(),
+                };
+            },
+            inject: [APP_ENV_CONFIG],
+        }),
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],
