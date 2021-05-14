@@ -2,13 +2,15 @@ import {
     BadRequestException,
     Body,
     Controller,
+    Get,
     Param,
     Put,
 } from "@nestjs/common";
-import { BodyValidationPipe, UseFormData } from "src/lib/helpers";
+import { BodyValidationPipe, Serialize, UseFormData } from "src/lib/helpers";
 import {
     AuthUser,
     AuthUserDecorator,
+    AuthUserDto,
     GlobalAuthUserService,
     TokenAuth,
     UpdateAvatarDTO,
@@ -62,5 +64,11 @@ export class UserController {
             throw new BadRequestException(result);
         }
         return result;
+    }
+
+    @Get("/info")
+    @Serialize(AuthUserDto, true)
+    async getUserInfo(@AuthUserDecorator() user: AuthUser) {
+        return user;
     }
 }
