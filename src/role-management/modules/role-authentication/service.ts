@@ -41,6 +41,11 @@ export class RoleAuthenticationService implements IRoleAuthenticationService {
         return result;
     }
 
+    async loginAsViewer(userId: string) {
+        const result = await this.loginAsRole(userId, ROLES.viewer);
+        return result;
+    }
+
     protected async loginAsRole(user, role) {
         const result = await this.userAuthService.logIn(user, role, {
             role_id: user.role_id,

@@ -41,6 +41,13 @@ export class RoleAuthenticationController {
             case ROLES.manager:
                 result = await this.roleAuthentication.loginAsManager(userId);
                 break;
+            case ROLES.viewer:
+                result = await this.roleAuthentication.loginAsViewer(userId);
+                break;
+            default:
+                throw new BadRequestException({
+                    error: "Invalid role type",
+                });
         }
         if (result.error) {
             throw new ForbiddenException(result);

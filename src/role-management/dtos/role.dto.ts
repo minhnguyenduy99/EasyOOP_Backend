@@ -11,9 +11,7 @@ export class RoleDTO extends AuthUserDto {
     @Exclude()
     accessToken: string;
 
-    @Exclude()
     active_role: string;
 
-    @Exclude()
     roles: string[];
 }

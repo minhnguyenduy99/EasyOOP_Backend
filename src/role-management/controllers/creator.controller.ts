@@ -70,7 +70,6 @@ export class CreatorController {
 
     @Get("/search/:page")
     @Serialize(PaginationSerializer(CreatorDTO))
-    @IsPublic()
     async findCreators(
         @Query(QueryValidationPipe) dto: SearchRolesDTO,
         @Param("page", ParsePagePipe) page: number,
