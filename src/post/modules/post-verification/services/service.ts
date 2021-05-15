@@ -67,30 +67,25 @@ export class PostVerificationService implements IPostVerificationService {
                 },
             ],
         });
-        builder.aggregate([
-            {
-                $group: {
-                    _id: {
-                        status: "$status",
-                    },
-                    count: {
-                        $sum: 1,
-                    },
-                },
-            },
-            {
-                $sort: {
-                    status: 1,
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    status: "$_id.status",
-                    count: 1,
-                },
-            },
-        ]);
+        this.verificationHelper.groupByPostStatus(builder);
+
+        const result = await this.verificationModel.aggregate(builder.build());
+        return result.reduce(
+            (previous, cur) => ({
+                ...previous,
+                [cur.status]: { count: cur.count },
+            }),
+            {},
+        );
+    }
+
+    async getSumVerificationGroupByCreator(creatorId: string) {
+        console.log(creatorId);
+        const builder = new AggregateBuilder();
+        builder.match({
+            author_id: creatorId,
+        });
+        this.verificationHelper.groupByPostStatus(builder);
         const result = await this.verificationModel.aggregate(builder.build());
         return result.reduce(
             (previous, cur) => ({
@@ -290,7 +285,6 @@ export class PostVerificationService implements IPostVerificationService {
         queryOptions?: QueryOptions,
     ): Promise<PostVerification> {
         const { managerId } = queryOptions;
-        console.log(managerId);
         const builder = new AggregateBuilder();
         builder
             .match({
@@ -341,10 +335,11 @@ export class PostVerificationService implements IPostVerificationService {
         };
     }
 
-    async batchDelete(verificationIds: string[]) {
+    async batchDelete(verificationIds: string[], creatorId: string) {
         try {
             const result = await this.verificationModel.deleteMany(
                 {
+                    author_id: creatorId,
                     verification_id: {
                         $in: verificationIds,
                     },

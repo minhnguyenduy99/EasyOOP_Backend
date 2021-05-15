@@ -45,9 +45,16 @@ import {
     VERIFICATION_TYPES,
 } from "src/post/modules/post-verification/consts";
 import { MockAuthor, MockManager } from "src/post/decorators/mock.decorator";
+import { AuthorizeClass } from "src/lib/authorization";
+import { RoleUser, RoleUserData } from "src/role-management";
+import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
 
 @Controller("/creator/posts")
 @UseInterceptors(ResponseSerializerInterceptor)
+@TokenAuth()
+@AuthorizeClass({
+    entity: "CreatorPost",
+})
 export class CreatorPostController {
     protected readonly DEFAULT_PAGE_SIZE = 6;
     protected paginator: IPaginator;
@@ -72,7 +79,11 @@ export class CreatorPostController {
         fileField: ["content_file", "thumbnail_file"],
         jsonFields: ["tags"],
     })
-    async createPost(@Body() dto: CreatePostDTO, @MockAuthor() author: any) {
+    async createPost(
+        @Body() dto: CreatePostDTO,
+        @AuthUserDecorator() author: RoleUserData,
+    ) {
+        dto.author_id = author.role_id;
         const result = await this.postService.createPost(dto);
         if (result.error) {
             throw new BadRequestException(result);
@@ -80,7 +91,7 @@ export class CreatorPostController {
         this.postVerification.createVerification({
             type: VERIFICATION_TYPES.CREATED,
             post_id: result.data.post_id,
-            author_id: author.author_id,
+            author_id: author.role_id,
             post_info: result.data,
         });
         return {
@@ -98,8 +109,9 @@ export class CreatorPostController {
         @Param("post_id", ParamValidationPipe)
         postId: string,
         @Body() dto: CreatePostDTO,
-        @MockAuthor() author: any,
+        @AuthUserDecorator() author: RoleUserData,
     ) {
+        dto.author_id = author.role_id;
         const result = await this.postService.updatePost(postId, dto);
         if (result["error"]) {
             throw new BadRequestException(result);
@@ -107,7 +119,7 @@ export class CreatorPostController {
         this.postVerification.createVerification({
             type: VERIFICATION_TYPES.UPDATED,
             post_id: result.data.post_id,
-            author_id: author.author_id,
+            author_id: author.role_id,
             post_info: result.data,
         });
         return {
@@ -140,7 +152,7 @@ export class CreatorPostController {
     async deletePost(
         @Param("post_id", ParamValidationPipe)
         postId: string,
-        @MockAuthor() author: any,
+        @AuthUserDecorator() author: RoleUserData,
     ) {
         const result = await this.postService.deletePost(postId);
         if (result["error"]) {
@@ -152,7 +164,7 @@ export class CreatorPostController {
         this.postVerification.createVerification({
             type: VERIFICATION_TYPES.DELETED,
             post_id: postId,
-            author_id: author.author_id,
+            author_id: author.role_id,
         });
         return result;
     }
@@ -162,7 +174,9 @@ export class CreatorPostController {
     async getPosts(
         @Param("page", ParseIntPipe) page: number,
         @Query(QueryValidationPipe) searchOptions: GetPostsDTO,
+        @AuthUserDecorator() author: RoleUserData,
     ) {
+        console.log(author);
         const {
             search,
             sort_by,
@@ -178,6 +192,7 @@ export class CreatorPostController {
             keyword: search,
             topic_id,
             post_status,
+            author_id: author.role_id,
         } as PostFilterOptions;
         const sorter = {
             field: sort_by,
@@ -200,7 +215,7 @@ export class CreatorPostController {
     async getPendingPosts(
         @Query(QueryValidationPipe) query: SearchVerificationDTO,
         @Query("group", ParseBoolPipe) group = false,
-        @MockAuthor() author: any,
+        @AuthUserDecorator() author: RoleUserData,
     ) {
         const status = query.status;
         let getActivePost = true;
@@ -209,7 +224,7 @@ export class CreatorPostController {
         }
         const [{ count, results }, groupResult] = await Promise.all([
             this.postVerification.findVerifications(query, {
-                authorId: author.author_id,
+                authorId: author.role_id,
                 groups: [
                     {
                         type: "post",
@@ -222,7 +237,9 @@ export class CreatorPostController {
                 ],
             }),
             group
-                ? this.postVerification.getSumVerificationByGroup()
+                ? this.postVerification.getSumVerificationGroupByCreator(
+                      author.role_id,
+                  )
                 : Promise.resolve(true),
         ]);
         const limiter = (await this.pendingPostLimiter.limit(results, count, {

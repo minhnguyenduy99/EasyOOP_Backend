@@ -7,6 +7,7 @@ import { SortOptions } from "../dtos";
 import { PostMetadata, Topic } from "../modules/core";
 
 export interface PostFilterOptions {
+    author_id?: string;
     post_status?: number;
     keyword?: string;
     topic_id?: string;
@@ -70,13 +71,19 @@ export class PostServiceExtender {
     }
 
     filter(builder: AggregateBuilder, options: PostFilterOptions) {
-        const { keyword = "", topic_id = null, post_status = null } = options;
+        const {
+            keyword = "",
+            topic_id = null,
+            post_status = null,
+            author_id = null,
+        } = options;
         builder.match({
             ...(keyword && {
                 $text: {
                     $search: keyword,
                 },
             }),
+            ...(author_id && { author_id }),
         });
         if (post_status !== -1) {
             builder.match({ post_status });

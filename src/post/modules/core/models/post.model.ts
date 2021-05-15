@@ -63,6 +63,11 @@ export class Post extends Document {
         default: null,
     })
     next_post_id: string;
+
+    @Prop({
+        required: true,
+    })
+    author_id: string;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
@@ -72,6 +77,10 @@ PostSchema.pre("save", function (next) {
         this.post_id = GenerateDigitID(10);
     }
     next();
+});
+
+PostSchema.index({
+    author_id: 1,
 });
 
 PostSchema.index({

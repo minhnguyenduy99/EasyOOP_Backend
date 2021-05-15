@@ -7,6 +7,7 @@ import { GroupOptions, PostGroupOptions } from "./group-options.interface";
 
 export const GROUP_TYPES = {
     post: "groupWithPosts",
+    manager: "groupWithManager",
 };
 
 @Injectable()
@@ -67,6 +68,18 @@ export class VerificationHelper {
             });
         }
         handlers.forEach((handler) => handler());
+        return this;
+    }
+
+    groupWithManager(builder: AggregateBuilder) {
+        builder.lookup({
+            from: "managers",
+            localField: "manager_id",
+            foreignField: "role_id",
+            as: "manager",
+            mergeObject: true,
+            removeFields: ["__v", "role_id", "user_id"],
+        });
         return this;
     }
 
@@ -170,5 +183,33 @@ export class VerificationHelper {
                     },
                 });
         }
+    }
+
+    groupByPostStatus(builder: AggregateBuilder) {
+        builder.aggregate([
+            {
+                $group: {
+                    _id: {
+                        status: "$status",
+                    },
+                    count: {
+                        $sum: 1,
+                    },
+                },
+            },
+            {
+                $sort: {
+                    status: 1,
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    status: "$_id.status",
+                    count: 1,
+                },
+            },
+        ]);
+        return this;
     }
 }

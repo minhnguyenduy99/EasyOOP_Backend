@@ -14,17 +14,21 @@ import {
 import { BaseLimiter, PostServiceExtender } from "./helpers";
 import { PostService, TopicService } from "./services";
 import { PostVerificationModule } from "./modules/post-verification";
-
+import { AuthorizationModule } from "src/lib/authorization";
+import authorizationConfig from "./authorization.config";
+import { AuthenticationModule } from "src/lib/authentication";
 @Module({
     imports: [
         CoreModule,
         PostVerificationModule,
         PaginationModule,
         EventEmitterModule,
+        AuthenticationModule,
         CloudinaryModule.forFeature({
             folder: "POSTS",
         }),
         TagModule,
+        AuthorizationModule.forFeature({ config: authorizationConfig }),
     ],
     providers: [
         {

@@ -12,6 +12,7 @@ import {
     Query,
     UseInterceptors,
 } from "@nestjs/common";
+import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
 import {
     BodyValidationPipe,
     QueryValidationPipe,
@@ -29,9 +30,11 @@ import {
     SearchVerificationDTO,
 } from "src/post/modules/post-verification";
 import { VERIFICATION_STATUS } from "src/post/modules/post-verification/consts";
+import { RoleUserData } from "src/role-management";
 import { BatchDeleteVerificationDTO, UpdateVerificationDTO } from "./dtos";
 
 @Controller("/creator/verifications")
+@TokenAuth()
 @UseInterceptors(ResponseSerializerInterceptor)
 export class CreatorVerificationController {
     protected readonly DEFAULT_PAGE_SIZE = 6;
@@ -59,9 +62,11 @@ export class CreatorVerificationController {
     @Patch()
     async batchDelete(
         @Body(BodyValidationPipe) request: BatchDeleteVerificationDTO,
+        @AuthUserDecorator() creator: RoleUserData,
     ) {
         const result = await this.postVerification.batchDelete(
             request.data.map((verification) => verification.verification_id),
+            creator.role_id,
         );
         if (result["error"]) {
             throw new BadRequestException(result);
@@ -95,7 +100,7 @@ export class CreatorVerificationController {
     async getPendingVerifications(
         @Query(QueryValidationPipe) query: SearchVerificationDTO,
         @Query("group", ParseBoolPipe) group = false,
-        @MockAuthor() author: any,
+        @AuthUserDecorator() creator: RoleUserData,
     ) {
         const status = query.status;
         let postStatus = null;
@@ -104,7 +109,7 @@ export class CreatorVerificationController {
         }
         const [{ count, results }, groupResult] = await Promise.all([
             this.postVerification.findVerifications(query, {
-                authorId: author.author_id,
+                authorId: creator.role_id,
                 groups: [
                     {
                         type: "post",
@@ -114,10 +119,15 @@ export class CreatorVerificationController {
                             postStatus,
                         },
                     },
+                    {
+                        type: "manager",
+                    },
                 ],
             }),
             group
-                ? this.postVerification.getSumVerificationByGroup()
+                ? this.postVerification.getSumVerificationGroupByCreator(
+                      creator.role_id,
+                  )
                 : Promise.resolve(true),
         ]);
         const limiter = (await this.verificationLimiter.limit(results, count, {
@@ -134,12 +144,12 @@ export class CreatorVerificationController {
     @Serialize(PostVerificationDTO)
     async getVerificationById(
         @Param("id") verificationId: string,
-        @MockAuthor() author: any,
+        @AuthUserDecorator() creator: RoleUserData,
     ) {
         const verification = await this.postVerification.getVerficationById(
             verificationId,
             {
-                authorId: author.author_id,
+                authorId: creator.role_id,
             },
         );
         if (!verification) {

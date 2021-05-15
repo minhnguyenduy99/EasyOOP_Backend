@@ -39,4 +39,6 @@ export class CreatePostDTO {
     @IsArray()
     @IsNotEmpty()
     tags: string[];
+
+    author_id: string;
 }
