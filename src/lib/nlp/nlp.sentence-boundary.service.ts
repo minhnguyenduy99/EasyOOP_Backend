@@ -25,6 +25,12 @@ export class RuleBasedSentenceBoundaryDetection {
         i = 0, len = data.length, index = 0
         let ret = []
         let S = "", V = "", O = ""
+        // fix non S start
+        while (len > 1 && data[i][1].indexOf("S") < 0) {
+            let tmp = data.shift()
+            data[i][0] = tmp[0] + " " + data[i][0]
+            len -= 1
+        }
         // fix unknow tag
         if (data[len - 1][1] == "-")
             data[len - 1][1] = "SO"

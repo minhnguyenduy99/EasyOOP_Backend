@@ -17,6 +17,7 @@ const type = {
 	__label__definition: TagType.question,
 	__label__example: TagType.example,
 	__label__exercise: TagType.post,
+	__label__login: "login",
 	__label__menu: TagType.menu,
 	__label__welcome: "welcome",
 }

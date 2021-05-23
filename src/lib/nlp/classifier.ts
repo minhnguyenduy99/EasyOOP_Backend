@@ -11,7 +11,7 @@ class MyClassifier extends FastTextClassifier {
                 limitOrThreadhold = 0
             if (limitOrThreadhold <= 1) {
                 limit = constant.nlpLimit
-                threadHold = Math.max(constant.askThreshold, limitOrThreadhold)
+                threadHold = limitOrThreadhold
             } else {
                 limit = Math.max(constant.nlpLimit, limitOrThreadhold)
                 threadHold = constant.askThreshold
@@ -40,12 +40,14 @@ class MyClassifier extends FastTextClassifier {
 
 interface iClassifier {
     type: MyClassifier,
-    topic: MyClassifier
+    topic: MyClassifier,
+    regular: MyClassifier
 }
 
 let classifier = {
     type: null,
-    topic: null
+    topic: null,
+    regular: null,
 } as iClassifier
 
 for (let key in classifier)

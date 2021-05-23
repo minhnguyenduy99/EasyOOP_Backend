@@ -58,4 +58,20 @@ export class NaturalLanguageProcessing {
             }).catch(err => reject(err))
         }) as Promise<INLPResult[]>
     }
+
+    public async getRegular(input: string) {
+        return new Promise((resolve, reject) => {
+            this.rbsbd.get(input).then(raws => {
+                if (raws.length > 1)
+                    resolve("unknow")
+                else
+                    classifier.regular.predict(raws[0], 0.1).then(out => {
+                        if (out.length > 0)
+                            resolve(out[0].label)
+                        else
+                            resolve("unknow")
+                    })
+            }).catch(err => reject(err))
+        }) as Promise<string>
+    }
 }
