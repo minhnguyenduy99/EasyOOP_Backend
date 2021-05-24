@@ -119,7 +119,16 @@ export class AggregateBuilder {
                 {
                     $match: {
                         $expr: {
-                            $eq: [`$$local_field`, `$${foreignField}`],
+                            $cond: [
+                                { $isArray: `$$local_field` },
+                                { $in: [`$${foreignField}`, `$$local_field`] },
+                                { $eq: [`$$local_field`, `$${foreignField}`] },
+                            ],
+                            // $or: [
+
+                            //     { $eq: [`$$local_field`, `$${foreignField}`] },
+                            //     { $in: [`$${foreignField}`, `$$local_field`] },
+                            // ],
                         },
                     },
                 },
