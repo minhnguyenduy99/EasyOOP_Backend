@@ -20,6 +20,7 @@ import { AuthorizationModule } from "./lib/authorization";
 import { RoleManagementModule } from "./role-management";
 import { AuthenticationModule } from "./lib/authentication";
 import { PaginationModule } from "./lib/pagination";
+import { TestExaminationModule } from "./test-examination";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -66,6 +67,7 @@ import { PaginationModule } from "./lib/pagination";
             },
             inject: [APP_ENV_CONFIG],
         }),
+        TestExaminationModule,
     ],
     controllers: [AppController],
     providers: [AppService, AppConfigService],
