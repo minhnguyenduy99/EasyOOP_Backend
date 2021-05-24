@@ -5,7 +5,7 @@ import { BaseModelSerializer } from "src/lib/helpers";
 export class MenuDTO extends BaseModelSerializer {
     @Expose()
     get menu_id() {
-        return this._id?.toString() ?? this._id;
+        return this._id?.toString() ?? null;
     }
 
     @IsNotEmpty()
@@ -22,7 +22,7 @@ export class MenuDTO extends BaseModelSerializer {
     parent_menu: string;
 
     constructor(partial: Partial<MenuDTO>, childrenMenu?: MenuDTO[]) {
-        super(partial);
+        super(partial ?? {});
         if (!partial) {
             this._id = null;
         }
