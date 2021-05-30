@@ -11,12 +11,12 @@ export class ReceiveMessageService {
         protected readonly taskNLP: TaskNLP
     ) { }
 
-    async handler(content) {
+    async handler(content: string, psid?: string) {
         if (content == "?" || content == "help")
             return this.taskWelcome.handler()
         else if (content == "menu")
             return this.taskMenu.handler()
         else
-            return this.taskNLP.handler(content)
+            return this.taskNLP.handler(content, psid)
     }
 }

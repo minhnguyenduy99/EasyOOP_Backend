@@ -10,13 +10,40 @@ interface MessengerObject {
 }
 
 export abstract class ResponseMessenger {
-    constructor(protected data: ResponseMessengerDTO) {
+    protected args: any[]
+    constructor(
+        protected data: ResponseMessengerDTO,
+        protected readonly callback?: Function,
+        ...args: any[]
+    ) {
+        this.args = args;
     }
 
     public pack() {
         return {
             messaging_type: "RESPONSE"
         } as MessengerObject
+    }
+
+    public async onSendComplete() {
+        if (this.callback == null)
+            return null
+        let [ret, wait] = await Promise.all([this.handleCallback(), this.simpleWait(0.5)])
+        return ret;
+    }
+    private async handleCallback() {
+        if (this.callback) {
+            let isAsync = this.callback.constructor.name === "AsyncFunction"
+            if (isAsync)
+                return await this.callback.apply(null, this.args)
+            else
+                return this.callback.apply(null, this.args)
+        }
+    }
+    private async simpleWait(second) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => resolve(null), second * 1000)
+        })
     }
 
     protected copyCleanObject<T>(o: T, bonus = {}) {
@@ -37,6 +64,16 @@ export abstract class ResponseMessenger {
             r = Object.values(r)
 
         return r as T
+    }
+
+    protected getText(text: string | string[]) {
+        if (!Array.isArray(text))
+            return text
+        let ret = "", len = text.length
+        for (let i = 0; i < len - 1; i++)
+            ret += text[i] + "\n"
+        ret += text[len - 1]
+        return ret
     }
 }
 
@@ -61,29 +98,29 @@ abstract class ButtonAbleMessenger extends FixPayloadMessenger {
 }
 
 export class SimpleText extends ResponseMessenger {
-    constructor(protected data: SimpleTextDTO) {
-        super(data)
+    constructor(protected data: SimpleTextDTO, callback?: Function, ...args) {
+        super(data, callback, ...args)
     }
 
     public pack() {
         let ret = super.pack()
-        ret.message = { text: this.data.text }
+        ret.message = { text: this.getText(this.data.text) }
         return ret;
     }
-
 }
 
 export class QuickRepliesMessenger extends FixPayloadMessenger {
-    constructor(protected data: QuickRepliesMessengerDTO) {
-        super(data)
+    constructor(protected data: QuickRepliesMessengerDTO, callback?: Function, ...args) {
+        super(data, callback, ...args)
     }
 
     public pack() {
         let ret = super.pack()
         ret.message = {
-            text: this.data.text,
+            text: this.getText(this.data.text),
             quick_replies: []
         }
+        this.data.buttons.length = Math.min(this.data.buttons.length, 13) // https://developers.facebook.com/docs/messenger-platform/send-messages/quick-replies
         this.data.buttons.forEach(e => { ret.message.quick_replies.push(this.copyCleanObject(e, { content_type: "text" })) })
         ret.message.quick_replies.forEach(e => e.payload = this.fixPayload(e.payload))
         return ret
@@ -91,8 +128,8 @@ export class QuickRepliesMessenger extends FixPayloadMessenger {
 }
 
 export class GenericMessenger extends ButtonAbleMessenger {
-    constructor(protected data: AttachmentElement[]) {
-        super(data)
+    constructor(protected data: AttachmentElement[], callback?: Function, ...args) {
+        super(data, callback, ...args)
     }
 
     public pack() {
@@ -108,7 +145,12 @@ export class GenericMessenger extends ButtonAbleMessenger {
         }
         this.data.forEach(e => { ret.message.attachment.payload.elements.push(this.copyCleanObject(e)) })
         ret.message.attachment.payload.elements.forEach(e => {
-            e.buttons?.forEach(button => this.updateButton(button))
+            if (e.subtitle)
+                e.subtitle = this.getText(e.subtitle)
+            if (e.buttons) {
+                e.buttons.length = Math.min(e.buttons.length, 3) // https://developers.facebook.com/docs/messenger-platform/send-messages/template/generic
+                e.buttons.forEach(button => this.updateButton(button))
+            }
             if (e.default_action) {
                 e.default_action.type = "web_url"
                 e.default_action.messenger_extensions = false

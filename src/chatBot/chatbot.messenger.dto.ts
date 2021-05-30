@@ -1,7 +1,7 @@
 export interface ResponseMessengerDTO { }
 
 export interface SimpleTextDTO extends ResponseMessengerDTO {
-    text: string
+    text: string | string[]
 }
 
 export interface QuickRepliesMessengerDTO extends SimpleTextDTO { // ome time button choise

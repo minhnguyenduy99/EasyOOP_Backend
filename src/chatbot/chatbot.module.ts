@@ -7,6 +7,8 @@ import { ServiceIntegrationModule } from "./integration";
 import { PostBackService } from "./service/service.post-back";
 import { ReceiveMessageService } from "./service/service.receive-message";
 import { SubcriberService } from "./service/service.subscriber";
+import { TaskExercise} from "./service/task/TaskExercise";
+import { TaskLogin } from "./service/task/TaskLogin";
 import { TaskMenu } from "./service/task/TaskMenu";
 import { TaskNLP } from "./service/task/taskNLP";
 import { TaskTopic } from "./service/task/TaskTopic";
@@ -20,7 +22,7 @@ import { TaskWelcome } from "./service/task/TaskWelcome";
             provide: Logger,
             useValue: new Logger("ChatbotModule"),
         },
-        ChatbotService, PostBackService, ReceiveMessageService, TaskMenu, TaskTopic, TaskWelcome, TaskNLP, SubcriberService, TaskUnknow
+        ChatbotService, PostBackService, ReceiveMessageService, TaskExercise, TaskLogin, TaskMenu, TaskTopic, TaskWelcome, TaskNLP, SubcriberService, TaskUnknow
     ],
     exports: [Logger],
     imports: [MenuModule, ServiceIntegrationModule, NLPModule]

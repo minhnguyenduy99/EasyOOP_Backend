@@ -23,12 +23,12 @@ export class ChatbotService {
         let reply = null as ResponseMessenger | ResponseMessenger[]
 
         if (webhook_event.postback)
-            reply = await this.postBackService.handler(webhook_event.postback)
+            reply = await this.postBackService.handler(webhook_event.postback.payload, msg.psid)
         else if (webhook_event.message) {
             if (webhook_event.message.quick_reply)
-                reply = await this.postBackService.handler(webhook_event.message.quick_reply)
+                reply = await this.postBackService.handler(webhook_event.message.quick_reply.payload, msg.psid)
             else if (webhook_event.message.text)
-                reply = await this.receiveMessageService.handler(webhook_event.message.text)
+                reply = await this.receiveMessageService.handler(webhook_event.message.text, msg.psid)
         }
 
         if (reply) {

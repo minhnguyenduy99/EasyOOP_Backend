@@ -1,3 +1,6 @@
+export { TaskID } from "./taskID"
+export { TaskExercise } from "./TaskExercise"
+export { TaskLogin } from "./TaskLogin"
 export { TaskMenu } from "./TaskMenu"
 export { TaskNLP } from "./taskNLP"
 export { TaskUnknow } from "./TaskUnknow"
