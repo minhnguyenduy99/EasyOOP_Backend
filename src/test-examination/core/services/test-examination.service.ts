@@ -347,6 +347,25 @@ export class TestExaminationService {
         };
     }
 
+    async getSentenceByIndex(
+        testId: string,
+        index: number,
+    ): Promise<ServiceResult<Sentence>> {
+        const aggregates = this.serviceHelper
+            .filterByTestId(testId)
+            .sentenceIdsInRange({ start: index, limit: 1 })
+            .groupWithSentences()
+            .build();
+        const [test] = await this.testModel.aggregate(aggregates);
+        if (!test) {
+            return ERRORS.TestNotFound;
+        }
+        return {
+            code: 0,
+            data: test.sentences?.[0],
+        };
+    }
+
     async removeSentences(
         testId: string,
         sentenceIds: string[],

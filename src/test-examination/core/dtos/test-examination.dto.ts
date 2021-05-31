@@ -17,6 +17,8 @@ export class TestExaminationDTO extends BaseModelSerializer {
 
     @Type(() => SentenceDTO)
     sentences?: SentenceDTO[];
+
+    list_sentence_ids?: string[];
 }
 
 export class DetailedTestExamnimationDTO extends PaginationSerializer(

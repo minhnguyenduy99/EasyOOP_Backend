@@ -27,14 +27,42 @@ export class TestSessionController {
         return session;
     }
 
-    @Get()
-    async getTestSentence(
+    @Get("/by-id")
+    async getTestSentenceById(
         @Query("sessionId") sessionId: string,
         @Query("sentenceId") sentenceId: string,
     ) {
         const result = await this.testSessionService.getTestSentenceById(
             sessionId,
             sentenceId,
+        );
+        return result;
+    }
+
+    @Get("/by-index")
+    async getTestSentenceByIndex(
+        @Query("sessionId") sessionId: string,
+        @Query("index", ParseIntPipe) index: number,
+    ) {
+        const result = await this.testSessionService.getTestSentenceByIndex(
+            sessionId,
+            index,
+        );
+        return result;
+    }
+
+    @Get("/bulk")
+    async getTestSentences(
+        @Query("sessionId") sessionId: string,
+        @Query("start", ParseIntPipe) start: number,
+        @Query("limit", ParseIntPipe) limit: number,
+    ) {
+        const result = await this.testSessionService.getTestSentenceInBulk(
+            sessionId,
+            {
+                start,
+                limit,
+            },
         );
         return result;
     }
@@ -48,6 +76,20 @@ export class TestSessionController {
         const result = await this.testSessionService.updateSentenceResult(
             sessionId,
             sentenceId,
+            answer,
+        );
+        return result;
+    }
+
+    @Put("/check-by-index")
+    async checkSentenceByIndex(
+        @Query("sessionId") sessionId: string,
+        @Query("index", ParseIntPipe) index: number,
+        @Query("answer", ParseIntPipe) answer: number,
+    ) {
+        const result = await this.testSessionService.updateSentenceResultByIndex(
+            sessionId,
+            index,
             answer,
         );
         return result;

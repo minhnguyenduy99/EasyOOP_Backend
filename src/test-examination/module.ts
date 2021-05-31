@@ -15,6 +15,7 @@ import { TestExaminationCoreModule } from "./core";
         AuthenticationModule,
         PaginationModule,
     ],
+    exports: [TestExaminationCoreModule],
     controllers: [
         TestExaminationController,
         TestResultController,

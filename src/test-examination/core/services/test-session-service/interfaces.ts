@@ -10,7 +10,7 @@ export interface TestSession {
     sessionId: string;
     testId: string;
     countAnswer: number;
-    userAnswers: { [sentenceId: string]: number };
+    userAnswers: { sentenceId: string; userAnswer: number }[];
     expired: number;
 }
 
