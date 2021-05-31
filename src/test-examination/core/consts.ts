@@ -10,6 +10,6 @@ export const TEST_TYPES = {
 };
 
 export const TEST_AVAILABLE_STATUSES = {
-    UNAVAILABLE: 0,
     AVAILABLE: 1,
+    UNAVAILABLE: 2,
 };

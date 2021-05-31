@@ -1,9 +1,8 @@
-import { Type } from "class-transformer";
-import { BaseModelSerializer } from "src/lib/helpers";
 import { PaginationSerializer } from "src/lib/helpers/serializers/base-pagination.serializer";
 import { SentenceDTO } from "./sentence.dto";
+import { TestExaminationDTO } from "./test-examination.dto";
 
-export class TestResultDTO extends BaseModelSerializer {
+export class TestResultDTO extends TestExaminationDTO {
     test_id: string;
     user_id: string;
     results: any[];

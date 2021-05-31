@@ -2,7 +2,9 @@ import { CACHE_MANAGER, Inject, Injectable, Logger } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { ERRORS, ServiceResult } from "src/test-examination/helpers";
 import { SentenceResultDTO } from "../../dtos";
-import { TestExamination, TestResult } from "../../models";
+import { Sentence, TestExamination, TestResult } from "../../models";
+import { SentenceQueryOptions } from "../interfaces";
+import { SentenceService } from "../sentence.service";
 import { TestExaminationService } from "../test-examination.service";
 import { TestResultService } from "../test-result.service";
 import { CreateSessionOptions, TestSession } from "./interfaces";
@@ -10,41 +12,39 @@ import { CreateSessionOptions, TestSession } from "./interfaces";
 export interface ITestSession {
     createTestSession(option: CreateSessionOptions): Promise<any>;
     updateSentenceResult(
-        userId: string,
-        testId: string,
+        sessionId: string,
         sentenceId: string,
         answer: number,
     ): Promise<any>;
-    finishTest(userId: string, testId: string): Promise<any>;
-    deleteSession(userId: string, testId: string): Promise<any>;
+    finishTest(sessionId: string, userId: string): Promise<any>;
+    deleteSession(sessionId: string): Promise<any>;
 }
 
 @Injectable()
 export class TestSessionService implements ITestSession {
     protected readonly DEFAULT_SENTENCE_PER_CACHE = 5;
-    protected readonly DEFAULT_EXPIRED_TIME = 1000;
+    protected readonly DEFAULT_EXPIRED_TIME = 86400;
     constructor(
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private testService: TestExaminationService,
         private testResultService: TestResultService,
+        private sentenceService: SentenceService,
         private logger: Logger,
     ) {}
 
     async createTestSession(
         option: CreateSessionOptions,
-    ): Promise<ServiceResult<any>> {
-        const { userId, testId } = option;
-        if (!userId) {
-            return ERRORS.MissingUserID;
-        }
+    ): Promise<ServiceResult<TestSession>> {
+        const { testId } = option;
         const test = await this.testService.getTestById(testId);
         if (!test) {
             return ERRORS.TestNotFound;
         }
         try {
-            await this.createSession(userId, test);
+            const session = await this.createSession(test);
             return {
                 code: 0,
+                data: session,
             };
         } catch (err) {
             this.logger.error(err);
@@ -52,19 +52,61 @@ export class TestSessionService implements ITestSession {
         }
     }
 
+    async getTestSentenceInBulk(
+        sessionId: string,
+        options?: SentenceQueryOptions,
+    ) {
+        const session = (await this.cacheManager.get(sessionId)) as TestSession;
+        if (!session) {
+            return ERRORS.TestSessionNotEstablished;
+        }
+        const result = await this.testService.getTestWithSentences(
+            session.testId,
+            options,
+        );
+        return result;
+    }
+
+    async getTestSentenceById(
+        sessionId: string,
+        sentenceId: string,
+    ): Promise<ServiceResult<{ sentence: Sentence; sessionId: string }>> {
+        const [testSession, sentence] = await Promise.all([
+            this.cacheManager.get(sessionId) as Promise<TestSession>,
+            this.sentenceService.getSentenceById(
+                sentenceId,
+            ) as Promise<Sentence>,
+        ]);
+        console.log(testSession);
+        if (!testSession || !sentence) {
+            if (!testSession) {
+                return null;
+            }
+            return ERRORS.QuestionNotFound;
+        }
+        return {
+            code: 0,
+            data: {
+                sessionId: testSession.sessionId,
+                sentence,
+            },
+        };
+    }
+
     async updateSentenceResult(
-        userId: string,
-        testId: string,
+        sessionId: string,
         sentenceId: string,
         answer: number,
     ) {
-        const sessionId = this.createResultSessionId(userId, testId);
         const testSession = (await this.cacheManager.get(
             sessionId,
         )) as TestSession;
 
         if (!testSession) {
             return ERRORS.TestSessionNotEstablished;
+        }
+        if (this.isTestExpired(testSession)) {
+            return ERRORS.TestSessionTimeExpired;
         }
         const sentence = testSession.userAnswers[sentenceId];
         if (!sentence) {
@@ -77,18 +119,22 @@ export class TestSessionService implements ITestSession {
         await this.updateSession(sessionId, testSession);
         return {
             code: 0,
+            data: {
+                expiredIn: testSession.expired
+                    ? (testSession.expired - Date.now()) / 1000
+                    : null,
+            },
         };
     }
 
-    async finishTest(userId: string, testId: string) {
-        const sessionId = this.createResultSessionId(userId, testId);
+    async finishTest(sessionId: string, userId: string) {
         const testSession = (await this.cacheManager.get(
             sessionId,
         )) as TestSession;
         if (!testSession) {
             return ERRORS.TestSessionNotEstablished;
         }
-        const result = await this.createTestResult(sessionId, testSession);
+        const result = await this.createTestResult(testSession, { userId });
         if (result.error) {
             return result;
         }
@@ -96,17 +142,15 @@ export class TestSessionService implements ITestSession {
         return result;
     }
 
-    async deleteSession(userId: string, testId: string) {
-        const sessionId = this.createResultSessionId(userId, testId);
+    async deleteSession(sessionId: string) {
         await this.cacheManager.del(sessionId);
     }
 
     protected async createTestResult(
-        sessionId: string,
         testSession: TestSession,
+        { userId },
     ): Promise<ServiceResult<TestResult>> {
-        const { testId, userId } = this.parseSessionId(sessionId);
-        const { userAnswers } = testSession;
+        const { testId, userAnswers } = testSession;
         const results = Object.keys(userAnswers).map(
             (sentenceId) =>
                 ({
@@ -127,31 +171,17 @@ export class TestSessionService implements ITestSession {
         }
     }
 
-    protected async getPartialTest(
-        testId: string,
-        page: number,
-        count: number,
-    ) {
-        const result = await this.testService.getTestWithSentences(testId, {
-            start: (page - 1) * count,
-            limit: count,
-        });
-        return result;
-    }
-
-    protected async createSession(userId: string, test: TestExamination) {
-        const resultSessionId = this.createResultSessionId(
-            userId,
-            test.test_id,
-        );
+    protected async createSession(test: TestExamination) {
+        const resultSessionId = this.createResultSessionId(test.test_id);
         const expiredCacheTimeInSeconds =
-            10 +
-            (test.limited_time === 0
-                ? this.DEFAULT_EXPIRED_TIME
-                : test.limited_time);
+            test.limited_time === 0
+                ? null
+                : Date.now() + test.limited_time * 1000;
         const sessionValue = {
+            sessionId: resultSessionId,
             countAnswer: 0,
-            expired: Date.now() + expiredCacheTimeInSeconds * 1000,
+            testId: test.test_id,
+            expired: expiredCacheTimeInSeconds,
             userAnswers: test.list_sentence_ids.reduce(
                 (pre, cur) => ({ ...pre, [cur]: -1 }),
                 {},
@@ -159,27 +189,24 @@ export class TestSessionService implements ITestSession {
         } as TestSession;
         await Promise.all([
             this.cacheManager.set(resultSessionId, sessionValue, {
-                ttl: expiredCacheTimeInSeconds,
+                ttl: this.DEFAULT_EXPIRED_TIME,
             }),
         ]);
+        return sessionValue;
     }
 
-    protected createResultSessionId(userId: string, testId: string) {
-        return `${userId}_${testId}`;
+    protected createResultSessionId(testId: string) {
+        const sessionId = `${testId}_${Date.now()}`;
+        return sessionId;
     }
 
     protected async updateSession(sessionId: string, session: TestSession) {
-        const expiresTime = session.expired - Date.now();
         await this.cacheManager.set(sessionId, session, {
-            ttl: expiresTime,
+            ttl: this.DEFAULT_EXPIRED_TIME,
         });
     }
 
-    protected parseSessionId(sessionId: string) {
-        const [userId, testId] = sessionId.split("_");
-        return {
-            userId,
-            testId,
-        };
+    protected isTestExpired(testSession: TestSession) {
+        return testSession.expired && testSession.expired < Date.now();
     }
 }

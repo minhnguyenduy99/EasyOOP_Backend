@@ -1,9 +1,11 @@
 import {
     Controller,
     Delete,
+    Get,
     Param,
     ParseIntPipe,
     Post,
+    Put,
     Query,
 } from "@nestjs/common";
 import {
@@ -14,59 +16,59 @@ import {
 import { TestSessionService } from "../core";
 
 @Controller("/tests/test-session")
-@TokenAuth()
 export class TestSessionController {
     constructor(private testSessionService: TestSessionService) {}
 
     @Post("/:testId")
-    async initTestSession(
-        @AuthUserDecorator() user: AuthUserDto,
-        @Param("testId") testId: string,
-    ) {
+    async initTestSession(@Param("testId") testId: string) {
         const session = await this.testSessionService.createTestSession({
             testId,
-            userId: user.user_id,
         });
         return session;
     }
 
-    @Post("/:testId/finish")
-    async finishTest(
-        @AuthUserDecorator() user: AuthUserDto,
-        @Param("testId") testId: string,
+    @Get()
+    async getTestSentence(
+        @Query("sessionId") sessionId: string,
+        @Query("sentenceId") sentenceId: string,
     ) {
-        const result = await this.testSessionService.finishTest(
-            user.user_id,
-            testId,
+        const result = await this.testSessionService.getTestSentenceById(
+            sessionId,
+            sentenceId,
         );
         return result;
     }
 
-    @Post("/:testId/:sentenceId")
+    @Put("/check")
     async checkSentence(
-        @AuthUserDecorator() user: AuthUserDto,
-        @Param("testId") testId: string,
-        @Param("sentenceId") sentenceId: string,
+        @Query("sessionId") sessionId: string,
+        @Query("sentenceId") sentenceId: string,
         @Query("answer", ParseIntPipe) answer: number,
     ) {
         const result = await this.testSessionService.updateSentenceResult(
-            user.user_id,
-            testId,
+            sessionId,
             sentenceId,
             answer,
         );
         return result;
     }
 
-    @Delete("/:testId")
-    async cancelTestSession(
+    @Post("/:testId/finish")
+    @TokenAuth()
+    async finishTest(
+        @Query("sessionId") sessionId: string,
         @AuthUserDecorator() user: AuthUserDto,
-        @Param("testId") testId: string,
     ) {
-        const result = await this.testSessionService.deleteSession(
+        const result = await this.testSessionService.finishTest(
+            sessionId,
             user.user_id,
-            testId,
         );
+        return result;
+    }
+
+    @Delete()
+    async cancelTestSession(@Query("sessionId") sessionId: string) {
+        const result = await this.testSessionService.deleteSession(sessionId);
         return { result };
     }
 }

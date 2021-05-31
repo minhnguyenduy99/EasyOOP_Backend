@@ -3,10 +3,11 @@ export interface TestQueryOptions {
     limit?: number;
     groupWithSentences?: boolean;
     totalScore?: boolean;
-    verify_status?: number;
+    verifying_status?: number;
 }
 
 export interface SentenceQueryOptions {
+    verifying_status?: number;
     start?: number;
     limit?: number;
 }

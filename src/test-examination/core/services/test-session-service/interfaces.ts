@@ -1,5 +1,4 @@
 export interface CreateSessionOptions {
-    userId: string;
     testId: string;
 }
 
@@ -8,6 +7,8 @@ export interface UpdateSessionOptions {
 }
 
 export interface TestSession {
+    sessionId: string;
+    testId: string;
     countAnswer: number;
     userAnswers: { [sentenceId: string]: number };
     expired: number;

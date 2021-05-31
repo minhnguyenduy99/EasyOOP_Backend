@@ -34,6 +34,13 @@ export class TestResultServiceHelper {
         return this;
     }
 
+    filterByResultId(resultId: string) {
+        this.builder.match({
+            result_id: resultId,
+        });
+        return this;
+    }
+
     limit(start, limit) {
         this.builder.limit({ start, limit });
         return this;
@@ -127,11 +134,6 @@ export class TestResultServiceHelper {
                     },
                 },
             },
-            {
-                $project: {
-                    results: 0,
-                },
-            },
         ]);
         return this;
 
@@ -143,8 +145,6 @@ export class TestResultServiceHelper {
                         "created_date",
                         "verifying_status",
                         "default_score_per_sentence",
-                        "type",
-                        "limited_time",
                         "creator_id",
                         "list_sentence_ids",
                     ];

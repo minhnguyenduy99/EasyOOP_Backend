@@ -9,7 +9,7 @@ import {
     UpdateTestExaminationDTO,
 } from "../dtos";
 import { Sentence, TestExamination } from "../models";
-import { TEST_STATUSES, TEST_TYPES } from "../consts";
+import { TEST_STATUSES, TEST_TYPES, TEST_AVAILABLE_STATUSES } from "../consts";
 import { ERRORS } from "../../helpers";
 import { ServiceResult } from "src/test-examination/helpers";
 import { SentenceService } from "./sentence.service";
@@ -38,7 +38,7 @@ export class TestExaminationService {
         }
         const createTestResult = await this.createTestInstance(
             dto,
-            TEST_STATUSES.PENDING,
+            TEST_AVAILABLE_STATUSES.AVAILABLE,
         );
         return createTestResult;
     }
@@ -146,13 +146,57 @@ export class TestExaminationService {
 
     async deleteTest(testId: string): Promise<ServiceResult<any>> {
         try {
-            const test = await this.testModel.findOneAndDelete({
-                test_id: testId,
-            });
+            const test = await this.testModel.findOneAndUpdate(
+                {
+                    test_id: testId,
+                    verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
+                },
+                {
+                    $set: {
+                        verifying_status: TEST_AVAILABLE_STATUSES.UNAVAILABLE,
+                    },
+                },
+                {
+                    new: true,
+                },
+            );
             if (!test) {
                 return ERRORS.TestNotFound;
             }
-            this.sentenceService.deleteSentencesByTestId(test.test_id);
+            // this.sentenceService.deleteSentencesByTestId(test.test_id);
+            return {
+                code: 0,
+                data: {
+                    test_id: test.test_id,
+                },
+            };
+        } catch (err) {
+            this.logger.error(err);
+            return ERRORS.ServiceError;
+        }
+    }
+
+    async restoreTest(
+        testId: string,
+    ): Promise<ServiceResult<{ test_id: string }>> {
+        try {
+            const test = await this.testModel.findOneAndUpdate(
+                {
+                    test_id: testId,
+                    verifying_status: TEST_AVAILABLE_STATUSES.UNAVAILABLE,
+                },
+                {
+                    $set: {
+                        verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
+                    },
+                },
+                {
+                    new: true,
+                },
+            );
+            if (!test) {
+                return ERRORS.TestNotFound;
+            }
             return {
                 code: 0,
                 data: {
@@ -283,9 +327,10 @@ export class TestExaminationService {
             test: TestExamination & { total_count: number; sentences: any[] };
         }>
     > {
-        const { start = 0, limit } = queryOptions;
+        const { start = 0, limit, verifying_status } = queryOptions;
         const aggregates = this.serviceHelper
             .filterByTestId(testId)
+            .filter({ verifying_status })
             .sentenceIdsInRange({ start, limit })
             .groupWithSentences()
             .build();

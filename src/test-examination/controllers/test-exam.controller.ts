@@ -124,6 +124,16 @@ export class TestExaminationController {
         return testResult;
     }
 
+    @Put("/:testId/restore")
+    @Serialize(CommonResponse(TestExaminationDTO))
+    async restoreTest(@Param("testId") testId: string) {
+        const testResult = await this.testService.restoreTest(testId);
+        if (!testResult) {
+            throw new NotFoundException(testResult);
+        }
+        return testResult;
+    }
+
     @Delete("/:testId")
     @Serialize(CommonResponse(TestExaminationDTO))
     async deleteTest(@Param("testId") testId: string) {

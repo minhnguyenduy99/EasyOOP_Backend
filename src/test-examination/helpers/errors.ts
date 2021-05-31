@@ -23,4 +23,8 @@ export default {
         code: -5,
         error: "Test session is not established",
     },
+    TestSessionTimeExpired: {
+        code: -6,
+        error: "Test session is expired",
+    },
 };

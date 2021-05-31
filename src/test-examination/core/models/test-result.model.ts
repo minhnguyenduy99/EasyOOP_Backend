@@ -7,6 +7,11 @@ export class TestResult extends Document {
     @Prop({
         required: true,
     })
+    result_id: string;
+
+    @Prop({
+        required: true,
+    })
     test_id: string;
 
     @Prop()
@@ -36,10 +41,20 @@ export const TestResultSchema = SchemaFactory.createForClass(TestResult);
 TestResultSchema.pre("save", function (next) {
     if (this.isNew) {
         this.created_date = Date.now();
+        this.result_id = GenerateDigitID(10);
     }
     this.total_sentence_count = undefined;
     next();
 });
+
+TestResultSchema.index(
+    {
+        result_id: 1,
+    },
+    {
+        unique: true,
+    },
+);
 
 TestResultSchema.index(
     {

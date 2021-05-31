@@ -5,6 +5,7 @@ import {
     TestExaminationController,
     TestResultController,
     TestSessionController,
+    TestExamViewerController,
 } from "./controllers";
 import { TestExaminationCoreModule } from "./core";
 
@@ -18,6 +19,7 @@ import { TestExaminationCoreModule } from "./core";
         TestExaminationController,
         TestResultController,
         TestSessionController,
+        TestExamViewerController,
     ],
 })
 export class TestExaminationModule {}

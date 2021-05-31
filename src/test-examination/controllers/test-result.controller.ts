@@ -5,6 +5,7 @@ import {
     Get,
     NotFoundException,
     Param,
+    ParseBoolPipe,
     ParseIntPipe,
     Post,
     Query,
@@ -37,11 +38,10 @@ import {
 } from "../core";
 
 @Controller("test-results")
-@TokenAuth()
 @UseInterceptors(ResponseSerializerInterceptor)
 export class TestResultController {
     protected readonly TEST_RESULT_LIMIT = 10;
-    protected readonly DETAIL_RESULT_LIMIT = 5;
+    protected readonly DETAIL_RESULT_LIMIT = 4;
     protected testResultPaginator: IPaginator;
     protected detailedPaginator: IPaginator;
 
@@ -54,19 +54,33 @@ export class TestResultController {
             pageSize: this.TEST_RESULT_LIMIT,
         });
         this.detailedPaginator = paginatorFactory.createPaginator({
-            pageURL: "/test-results/{testId}/detail",
+            pageURL: "/test-results/{resultId}/detail",
             pageSize: this.DETAIL_RESULT_LIMIT,
         });
     }
 
+    @Post("/calculate")
+    @Serialize(CommonResponse(TestResultDTO))
+    async createTestResult(@Body(BodyValidationPipe) dto: CreateTestResultDTO) {
+        const result = await this.testResultService.createTestResult(
+            dto,
+            false,
+        );
+        if (result.error) {
+            throw new BadRequestException(result);
+        }
+        return result;
+    }
+
     @Post()
     @Serialize(CommonResponse(TestResultDTO))
-    async createTestResult(
+    @TokenAuth()
+    async saveTestResult(
         @Body(BodyValidationPipe) dto: CreateTestResultDTO,
         @AuthUserDecorator() user: AuthUserDto,
     ) {
         dto.user_id = user.user_id;
-        const result = await this.testResultService.createTestResult(dto);
+        const result = await this.testResultService.createTestResult(dto, true);
         if (result.error) {
             throw new BadRequestException(result);
         }
@@ -75,6 +89,7 @@ export class TestResultController {
 
     @Get("/search")
     @Serialize(PaginationSerializer(TestResultDTO))
+    @TokenAuth()
     async getTestResultsByUser(
         @Query(QueryValidationPipe) query: SearchTestResultsDTO,
         @Query("page", ParseIntPipe, ParsePagePipe) page: number,
@@ -101,41 +116,35 @@ export class TestResultController {
         return paginatedResults;
     }
 
-    @Get("/:testId")
+    @Get("/:resultId")
     @Serialize(TestResultDTO)
-    async getDetailedTestResult(
-        @AuthUserDecorator() user: AuthUserDto,
-        @Param("testId") testId: string,
-    ) {
-        const result = await this.testResultService.getTestResult(
-            user.user_id,
-            testId,
-        );
+    @TokenAuth()
+    async getDetailedTestResult(@Param("resultId") resultId: string) {
+        const result = await this.testResultService.getTestResultById(resultId);
         if (!result) {
-            throw new NotFoundException({ error: "Test ID not found" });
+            throw new NotFoundException({ error: "Result ID not found" });
         }
         return result;
     }
 
-    @Get("/:testId/detail")
+    @Get("/:resultId/detail")
     @Serialize(DetailedTestResultDTO)
+    @TokenAuth()
     async getDetailedResults(
-        @Param("testId") testId: string,
+        @Param("resultId") resultId: string,
         @Query("page", ParseIntPipe, ParsePagePipe) page: number,
-        @AuthUserDecorator() user: AuthUserDto,
     ) {
         const limitOptions = {
             start: (page - 1) * this.DETAIL_RESULT_LIMIT,
             limit: this.DETAIL_RESULT_LIMIT,
         };
         const result = await this.testResultService.getDetailedTestResults(
-            user.user_id,
-            testId,
+            resultId,
             limitOptions,
         );
         if (!result) {
             throw new NotFoundException({
-                error: "Test ID not found",
+                error: "Result ID not found",
             });
         }
         const { detailed_results, total_sentence_count } = result;
@@ -143,11 +152,9 @@ export class TestResultController {
             detailed_results,
             total_sentence_count,
             {
+                page,
                 placeholders: {
-                    testId,
-                },
-                additionQuery: {
-                    page,
+                    resultId,
                 },
             },
         );

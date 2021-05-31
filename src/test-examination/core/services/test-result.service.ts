@@ -16,6 +16,7 @@ import {
     TestResultQueryOptions,
 } from "./interfaces";
 import { TestResultServiceHelper } from "./test-result-service-helper";
+import { GenerateDigitID } from "src/lib/helpers";
 
 @Injectable()
 export class TestResultService {
@@ -34,6 +35,7 @@ export class TestResultService {
 
     async createTestResult(
         dto: CreateTestResultDTO,
+        save?: boolean,
     ): Promise<ServiceResult<TestResult>> {
         const test = await this.testService.getTestById(dto.test_id, {
             groupWithSentences: true,
@@ -42,11 +44,18 @@ export class TestResultService {
             return ERRORS.TestNotFound;
         }
         const result = await this.getObtainedScore(dto.results, test);
-        const input = {
+        let input = {
             ...dto,
             ...result,
         };
         try {
+            if (!save) {
+                input.total_sentence_count = test.list_sentence_ids.length;
+                return {
+                    code: 0,
+                    data: input,
+                };
+            }
             const testResult = await this.createTestInstance(
                 dto.user_id,
                 dto.test_id,
@@ -61,6 +70,18 @@ export class TestResultService {
             this.logger.error(err);
             return ERRORS.ServiceError;
         }
+    }
+
+    async getTestResultById(
+        resultId: string,
+        options?: DetailedTestResultQueryOptions,
+    ) {
+        const aggregates = this.serviceHelper.filterByResultId(resultId)
+            .groupWithTest()
+            .build();
+
+        const result = await this.testResultModel.aggregate(aggregates);
+        return result?.[0];
     }
 
     async getTestResultsByUser(
@@ -105,19 +126,17 @@ export class TestResultService {
     }
 
     async getDetailedTestResults(
-        userId: string,
-        testId: string,
+        resultId: string,
         options?: DetailedTestResultQueryOptions,
     ): Promise<DetailedTestResultDTO> {
         const { start, limit } = options;
         const aggregates = this.serviceHelper
-            .filter({ user_id: userId, test_id: testId })
+            .filterByResultId(resultId)
             .resultsInRange(start, limit, "detailed_results")
             .groupWithSentences("detailed_results")
             .build();
 
         const [result] = await this.testResultModel.aggregate(aggregates);
-        console.log(result);
         return result;
     }
 
@@ -132,7 +151,7 @@ export class TestResultService {
         const scores = test.sentences
             .map(({ sentence_id, answer, score }) => ({
                 sentence_id,
-                score,
+                score: score === 0 ? test.default_score_per_sentence : score,
                 correct: answer === sentenceObj[sentence_id],
             }))
             .reduce(accumulateScore, {
@@ -159,6 +178,9 @@ export class TestResultService {
         testId: string,
         dto: any,
     ) {
+        dto.result_id = GenerateDigitID(10);
+        dto.created_date = Date.now();
+        console.log(dto);
         const result = await this.testResultModel.findOneAndUpdate(
             {
                 user_id: userId,
