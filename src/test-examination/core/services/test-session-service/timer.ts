@@ -29,4 +29,12 @@ export class SessionTimer {
         let secondStr = this.seconds.toString().padStart(2, "0");
         return `${this.hours}:${minuteStr}:${secondStr}`;
     }
+
+    public static parse(second: number) {
+        return new SessionTimer(second * 1000)
+    }
+
+    public static parseMs(milisecond: number) {
+        return new SessionTimer(milisecond)
+    }
 }
