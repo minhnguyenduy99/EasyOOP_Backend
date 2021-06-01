@@ -1,8 +1,10 @@
 import { CACHE_MANAGER, Inject, Injectable, Logger } from "@nestjs/common";
 import { Cache } from "cache-manager";
 import { ERRORS, ServiceResult } from "src/test-examination/helpers";
+import { CONFIG_KEYS } from "../../config";
 import { TEST_AVAILABLE_STATUSES } from "../../consts";
 import { SentenceDTO, SentenceResultDTO } from "../../dtos";
+import { TestExamnimationCoreConfig } from "../../interfaces";
 import { Sentence, TestExamination, TestResult } from "../../models";
 import { SentenceQueryOptions } from "../interfaces";
 import { SentenceService } from "../sentence.service";
@@ -28,6 +30,7 @@ export class TestSessionService implements ITestSession {
     protected readonly DEFAULT_EXPIRED_TIME = 86400;
     constructor(
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
+        @Inject(CONFIG_KEYS.CONFIG) private config: TestExamnimationCoreConfig,
         private testService: TestExaminationService,
         private testResultService: TestResultService,
         private sentenceService: SentenceService,
@@ -52,6 +55,27 @@ export class TestSessionService implements ITestSession {
             this.logger.error(err);
             return ERRORS.ServiceError;
         }
+    }
+
+    async getTestResultBySessionId(
+        sessionId: string,
+    ): Promise<ServiceResult<TestResult>> {
+        const session = (await this.cacheManager.get(sessionId)) as TestSession;
+        if (!session) {
+            return ERRORS.TestSessionNotEstablished;
+        }
+        const answers = session.userAnswers.map((answer) => ({
+            sentence_id: answer.sentenceId,
+            user_answer: answer.userAnswer,
+        }));
+        const result = await this.testResultService.createTestResult(
+            {
+                test_id: session.testId,
+                results: answers,
+            },
+            false,
+        );
+        return result;
     }
 
     async getTestSentenceInBulk(
@@ -238,20 +262,32 @@ export class TestSessionService implements ITestSession {
 
     async finishTest(
         sessionId: string,
-        userId: string,
-    ): Promise<ServiceResult<any>> {
+    ): Promise<
+        ServiceResult<{
+            testResult: TestResult;
+            sessionURL: string;
+        }>
+    > {
         const testSession = (await this.cacheManager.get(
             sessionId,
         )) as TestSession;
         if (!testSession) {
             return ERRORS.TestSessionNotEstablished;
         }
-        const result = await this.createTestResult(testSession, { userId });
+        const result = await this.createTestResult(testSession);
         if (result.error) {
-            return result;
+            return {
+                code: 0,
+                error: result.error,
+            };
         }
-        await this.cacheManager.del(sessionId);
-        return result;
+        return {
+            code: 0,
+            data: {
+                testResult: result.data,
+                sessionURL: this.constructSessionResultURL(testSession),
+            },
+        };
     }
 
     async deleteSession(sessionId: string) {
@@ -260,7 +296,6 @@ export class TestSessionService implements ITestSession {
 
     protected async createTestResult(
         testSession: TestSession,
-        { userId },
     ): Promise<ServiceResult<TestResult>> {
         const { testId, userAnswers } = testSession;
         const results = Object.keys(userAnswers).map(
@@ -271,11 +306,13 @@ export class TestSessionService implements ITestSession {
                 } as SentenceResultDTO),
         );
         try {
-            const result = await this.testResultService.createTestResult({
-                test_id: testId,
-                user_id: userId,
-                results,
-            });
+            const result = await this.testResultService.createTestResult(
+                {
+                    test_id: testId,
+                    results,
+                },
+                false,
+            );
             return result;
         } catch (err) {
             this.logger.error(err);
@@ -320,5 +357,9 @@ export class TestSessionService implements ITestSession {
 
     protected isTestExpired(testSession: TestSession) {
         return testSession.expired && testSession.expired < Date.now();
+    }
+
+    protected constructSessionResultURL(session: TestSession) {
+        return `${this.config.sessionURL}/${session.testId}?sid=${session.sessionId}`;
     }
 }

@@ -35,6 +35,7 @@ import {
     SearchTestResultsDTO,
     TestResultDTO,
     TestResultService,
+    TestSessionService,
 } from "../core";
 
 @Controller("test-results")
@@ -47,6 +48,7 @@ export class TestResultController {
 
     constructor(
         private testResultService: TestResultService,
+        private testSessionService: TestSessionService,
         paginatorFactory: PaginatorFactory,
     ) {
         this.testResultPaginator = paginatorFactory.createPaginator({
@@ -65,6 +67,18 @@ export class TestResultController {
         const result = await this.testResultService.createTestResult(
             dto,
             false,
+        );
+        if (result.error) {
+            throw new BadRequestException(result);
+        }
+        return result;
+    }
+
+    @Get("/by-session/:sessionId")
+    @Serialize(CommonResponse(TestResultDTO))
+    async getTestResultBySessionId(@Param("sessionId") sessionId: string) {
+        const result = await this.testSessionService.getTestResultBySessionId(
+            sessionId,
         );
         if (result.error) {
             throw new BadRequestException(result);

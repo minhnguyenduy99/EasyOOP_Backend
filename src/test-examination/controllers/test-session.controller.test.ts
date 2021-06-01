@@ -15,7 +15,7 @@ import {
 } from "src/lib/authentication";
 import { TestSessionService } from "../core";
 
-@Controller("/tests/test-session")
+@Controller("/test-session")
 export class TestSessionController {
     constructor(private testSessionService: TestSessionService) {}
 
@@ -95,16 +95,9 @@ export class TestSessionController {
         return result;
     }
 
-    @Post("/:testId/finish")
-    @TokenAuth()
-    async finishTest(
-        @Query("sessionId") sessionId: string,
-        @AuthUserDecorator() user: AuthUserDto,
-    ) {
-        const result = await this.testSessionService.finishTest(
-            sessionId,
-            user.user_id,
-        );
+    @Post("/:sessionId/finish")
+    async finishTest(@Param("sessionId") sessionId: string) {
+        const result = await this.testSessionService.finishTest(sessionId);
         return result;
     }
 

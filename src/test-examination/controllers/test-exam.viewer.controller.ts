@@ -10,7 +10,11 @@ import {
     Query,
     UseInterceptors,
 } from "@nestjs/common";
-import { ResponseSerializerInterceptor, Serialize } from "src/lib/helpers";
+import {
+    QueryValidationPipe,
+    ResponseSerializerInterceptor,
+    Serialize,
+} from "src/lib/helpers";
 import { PaginationSerializer } from "src/lib/helpers/serializers/base-pagination.serializer";
 import {
     IPaginator,
@@ -18,6 +22,7 @@ import {
     ParsePagePipe,
 } from "src/lib/pagination";
 import {
+    SearchTestDTO,
     SentenceDTO,
     TestExaminationDTO,
     TestExaminationService,
@@ -39,6 +44,37 @@ export class TestExamViewerController {
             pageURL: "/viewer/tests/search",
             pageSize: this.SENTENCES_PER_TEST_LIMIT,
         });
+    }
+
+    @Get("/search")
+    @Serialize(PaginationSerializer(TestExaminationDTO))
+    async searchTest(
+        @Query(QueryValidationPipe) search: SearchTestDTO,
+        @Query("page", ParsePagePipe, ParseIntPipe) page: number,
+    ) {
+        const limitOption = {
+            start: (page - 1) * this.TEST_LIMIT,
+            limit: this.TEST_LIMIT,
+        };
+
+        search = {
+            ...search,
+            verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
+        };
+
+        const { count, results } = await this.testService.searchTest(
+            search,
+            limitOption,
+        );
+        const paginatedResult = await this.testPaginator.paginate(
+            results,
+            count,
+            {
+                page,
+                additionQuery: { ...search, page },
+            },
+        );
+        return paginatedResult;
     }
 
     @Get("/:testId")

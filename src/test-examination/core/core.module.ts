@@ -16,9 +16,14 @@ import {
     TestResultServiceHelper,
     TestSessionService,
 } from "./services";
+import { CONFIG_KEYS, configLoader } from "./config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
 @Module({
     imports: [
+        ConfigModule.forRoot({
+            load: [configLoader],
+        }),
         MongooseModule.forFeature([
             { name: TestExamination.name, schema: TestExamninationSchema },
             { name: Sentence.name, schema: SentenceSchema },
@@ -30,6 +35,12 @@ import {
         {
             provide: Logger,
             useValue: new Logger("TestExaminationCore"),
+        },
+        {
+            provide: CONFIG_KEYS.CONFIG,
+            useFactory: (configService: ConfigService) =>
+                configService.get(CONFIG_KEYS.CONFIG),
+            inject: [ConfigService],
         },
         ServiceHelper,
         TestExaminationService,
