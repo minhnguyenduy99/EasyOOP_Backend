@@ -103,9 +103,9 @@ export class TestSessionService implements ITestSession {
             return result as any;
         }
         const { data } = result;
-        data.test.sentences = data.test.sentences.map((sentence) => ({
+        data.test.sentences = data.test.sentences.map((sentence, index) => ({
             ...sentence,
-            user_answer: session.userAnswers[sentence.sentence_id],
+            user_answer: session.userAnswers[index].userAnswer,
         }));
         return result;
     }
