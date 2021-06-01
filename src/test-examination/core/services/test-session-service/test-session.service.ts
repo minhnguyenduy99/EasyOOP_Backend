@@ -57,6 +57,10 @@ export class TestSessionService implements ITestSession {
         }
     }
 
+    async getTestSessionById(sessionId: string): Promise<TestSession> {
+        return this.cacheManager.get(sessionId);
+    }
+
     async getTestResultBySessionId(
         sessionId: string,
     ): Promise<ServiceResult<TestResult>> {
@@ -330,6 +334,7 @@ export class TestSessionService implements ITestSession {
             sessionId: resultSessionId,
             countAnswer: 0,
             testId: test.test_id,
+            title: test.title,
             expired: expiredCacheTimeInSeconds,
             userAnswers: test.list_sentence_ids.map((sentenceId) => ({
                 sentenceId,

@@ -9,6 +9,7 @@ export interface UpdateSessionOptions {
 export interface TestSession {
     sessionId: string;
     testId: string;
+    title: string;
     countAnswer: number;
     userAnswers: { sentenceId: string; userAnswer: number }[];
     expired: number;
