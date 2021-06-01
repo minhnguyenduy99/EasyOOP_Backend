@@ -9,16 +9,25 @@ export class Topic extends Document {
     })
     topic_title: string;
 
+    @Prop()
+    topic_order: number;
+
     @Prop({
         type: Types.ObjectId,
         required: false,
         default: null,
     })
     first_post_id: string;
+
+    @Prop()
+    thumbnail_url: string;
+
+    @Prop()
+    description: string;
 }
 
 export const TopicSchema = SchemaFactory.createForClass(Topic);
 
 TopicSchema.index({
-    post_title: "text",
+    topic_order: 1,
 });

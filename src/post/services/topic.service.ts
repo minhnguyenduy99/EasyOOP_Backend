@@ -126,6 +126,7 @@ export class TopicService implements ITopicService {
                 mergeObject: true,
                 removeFields: ["__v"],
             })
+            .sort({ topic_order: 1 })
             .aggregate(this.limiter.limit(start, limit));
 
         const queriedResult = await this.postModel

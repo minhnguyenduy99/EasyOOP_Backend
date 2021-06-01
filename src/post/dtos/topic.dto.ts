@@ -47,4 +47,8 @@ export class TopicDTO extends BaseModelSerializer {
 
     @Transform(({ value }) => value?.toString() ?? value)
     first_post_id: string;
+
+    thumbnail_url: string;
+
+    description: string;
 }
