@@ -12,6 +12,7 @@ import {
     AuthenticationService,
     AuthUserDecorator,
     AuthUserDto,
+    LocalAuth,
     LoginResultDTO,
     TokenAuth,
 } from "../core";
@@ -20,6 +21,16 @@ import {
 @UseInterceptors(ResponseSerializerInterceptor)
 export class AuthController {
     constructor(private authService: AuthenticationService) {}
+
+    @LocalAuth()
+    @Post("/login/local")
+    @Serialize(CommonResponse(AuthUserDto))
+    localLogin(@AuthUserDecorator() user: any) {
+        return {
+            code: 0,
+            data: user,
+        };
+    }
 
     @TokenAuth({
         attachCookies: false,

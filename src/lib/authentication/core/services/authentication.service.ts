@@ -99,10 +99,29 @@ export class AuthenticationService implements IAuthenticationService {
         };
     }
 
+    async loginUserWithPassword(usernameOrEmail: string, password: string) {
+        const user = await this.userService.getUserByUsernameOrEmail(
+            usernameOrEmail,
+        );
+        if (!user) {
+            return null;
+        }
+        const isPasswordValid = await this.encryptService.compare(
+            password,
+            user.password,
+        );
+        if (!isPasswordValid) {
+            return null;
+        }
+        const loginResult = await this.logIn(user);
+        if (loginResult.error) {
+            return null;
+        }
+        return loginResult.data;
+    }
+
     async validateAccessTokenPayload(payload: AccessTokenPayload) {
         const user = await this.userService.getUserById(payload.user_id);
-        console.log(payload);
-        console.log(user);
         if (!user || user.active_role !== payload.active_role) {
             return null;
         }

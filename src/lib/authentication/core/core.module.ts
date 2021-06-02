@@ -18,7 +18,7 @@ import { AuthorizationModule } from "src/lib/authorization";
 import { UserEventsHandler } from "./events/user-events.handler";
 import configLoader from "./core.config";
 import { AuthTestController } from "./auth-test.controller";
-import { AccessTokenStrategy } from "./strategies";
+import { AccessTokenStrategy, LocalStrategy } from "./strategies";
 import { CloudinaryModule } from "src/lib/cloudinary";
 
 @Module({
@@ -57,6 +57,7 @@ import { CloudinaryModule } from "src/lib/cloudinary";
         GlobalAuthUserService,
         UserEventsHandler,
         AccessTokenStrategy,
+        LocalStrategy,
     ],
     exports: [
         MongooseModule,
