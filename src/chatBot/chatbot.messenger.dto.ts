@@ -1,3 +1,5 @@
+import { TaskID } from "./service/task";
+
 export interface ResponseMessengerDTO { }
 
 export interface SimpleTextDTO extends ResponseMessengerDTO {
@@ -10,7 +12,7 @@ export interface QuickRepliesMessengerDTO extends SimpleTextDTO { // ome time bu
 
 export interface AttachmentElement {
     title?: string
-    subtitle?: string
+    subtitle?: string | string[]
     image_url?: string
     buttons?: MessengerButton[] // max length = 3
     default_action?: {
@@ -20,10 +22,14 @@ export interface AttachmentElement {
 }
 
 //#region hidden
+interface PayloadTask {
+    tid: TaskID,
+    args: any[]
+}
 
 interface QuickRepliesButton {
     title: string
-    payload: string | object
+    payload: string | PayloadTask | object
     image_url?: string
 }
 

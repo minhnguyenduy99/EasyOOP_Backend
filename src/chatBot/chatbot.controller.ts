@@ -19,8 +19,8 @@ export class ChatBotController {
         const body = req.body;
         const res = req.res;
         if (body.object === "page") {
-            body.entry?.forEach(entry => this.chatbotService.handleRaw(entry.messaging[0]).catch(err => this.Log.error(err, this.logTag)));
             res.status(HTTP_CODES.OK).send("EVENT_RECEIVED");
+            body.entry?.forEach(entry => this.chatbotService.handleRaw(entry.messaging[0]).catch(err => this.Log.error(this.logTag + err, err.trace)));
         } else {
             res.sendStatus(HTTP_CODES.NOT_FOUND);
         }
@@ -28,7 +28,7 @@ export class ChatBotController {
 
     @Get("/test/taskNLP")
     getResults(@Query("text") text: string) {
-        this.chatbotService.handle(text).catch(err => this.Log.error(err, this.logTag))
+        this.chatbotService.handle(text).catch(err => this.Log.error(this.logTag + err, err.trace))
     }
 
     @Get()
@@ -43,7 +43,7 @@ export class ChatBotController {
             else {
                 switch (mode) {
                     case "subscribe":
-                        this.subcriberService.handler(req, res).catch(err => this.Log.error(err, this.logTag))
+                        this.subcriberService.handler(req, res).catch(err => this.Log.error(this.logTag + err, err.trace))
                         break;
                     default:
                         let mode = req.query["hub.mode"];

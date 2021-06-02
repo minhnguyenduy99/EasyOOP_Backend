@@ -26,24 +26,7 @@ export abstract class ResponseMessenger {
     }
 
     public async onSendComplete() {
-        if (this.callback == null)
-            return null
-        let [ret, wait] = await Promise.all([this.handleCallback(), this.simpleWait(0.5)])
-        return ret;
-    }
-    private async handleCallback() {
-        if (this.callback) {
-            let isAsync = this.callback.constructor.name === "AsyncFunction"
-            if (isAsync)
-                return await this.callback.apply(null, this.args)
-            else
-                return this.callback.apply(null, this.args)
-        }
-    }
-    private async simpleWait(second) {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => resolve(null), second * 1000)
-        })
+        return this.callback ? Promise.resolve(this.callback(...this.args)) : null
     }
 
     protected copyCleanObject<T>(o: T, bonus = {}) {

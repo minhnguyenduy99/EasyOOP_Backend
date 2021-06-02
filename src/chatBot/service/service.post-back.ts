@@ -25,11 +25,19 @@ export class PostBackService {
             case TaskID.Menu:
                 return obj.args ? this.taskMenu.handler(obj.args[0]) : this.taskMenu.handler()
             case TaskID.Test:
-                return this.taskExercise.startTest(obj.args[0])
+                return this.taskExercise.startTest(...obj.args)
+            case TaskID.TestHelp:
+                return this.taskExercise.testHelp(...obj.args)
             case TaskID.ExerciseChoosePage:
                 return this.taskExercise.onChoosePage(...obj.args)
             case TaskID.ExerciseChooseQuestion:
                 return this.taskExercise.onChooseQuestion(...obj.args)
+            case TaskID.ExerciseChooseAnswer:
+                return this.taskExercise.onChooseAnswer(...obj.args)
+            case TaskID.ExerciseChooseVerifySubmit:
+                return this.taskExercise.onVerifySubmit(...obj.args)
+            case TaskID.ExerciseChooseSubmit:
+                return this.taskExercise.onSubmit(...obj.args)
             default:
                 this.Log.warn(obj, `${this.logTag} unhandler payload`)
         }

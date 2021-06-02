@@ -1,6 +1,7 @@
 import { Logger, Module } from "@nestjs/common";
 import { NLPModule } from "src/lib/nlp";
 import { MenuModule } from "src/menu";
+import { TestExaminationModule } from "src/test-examination";
 import { ChatBotController } from "./chatbot.controller";
 import { ChatbotService } from "./chatbot.service";
 import { ServiceIntegrationModule } from "./integration";
@@ -25,6 +26,6 @@ import { TaskWelcome } from "./service/task/TaskWelcome";
         ChatbotService, PostBackService, ReceiveMessageService, TaskExercise, TaskLogin, TaskMenu, TaskTopic, TaskWelcome, TaskNLP, SubcriberService, TaskUnknow
     ],
     exports: [Logger],
-    imports: [MenuModule, ServiceIntegrationModule, NLPModule]
+    imports: [MenuModule, ServiceIntegrationModule, NLPModule, TestExaminationModule]
 })
 export class ChatbotModule { }

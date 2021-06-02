@@ -3,6 +3,7 @@ import { post } from "request";
 import { ResponseMessenger } from ".";
 
 export class Messenger {
+    private logTag = "[Messenger]"
     private readonly delayTime = 0.5
     protected webhook_event: any; // an entry of "entry" obj return from webhook
     protected _psid: string;
@@ -25,6 +26,7 @@ export class Messenger {
         let data = msg.pack()
         data.recipient = { id: this._psid }
         this.Log.debug(data, "reply")
+        let that = this
         post(
             {
                 uri: process.env.FACEBOOK_HOOK_URI,
@@ -32,15 +34,17 @@ export class Messenger {
                 json: data,
             },
             (err, res, body) => {
-                if (err) this.Log.error(err, "Unable to send message");
-                else call_back?.(res, body);
-            },
+                if (err)
+                    this.Log.error(err, "Unable to send message");
+                else {
+                    call_back?.(res, body);
+                    msg.onSendComplete().then(ret => {
+                        if (ret && ret instanceof ResponseMessenger)
+                            that.reply(ret);
+                    }).catch(err => this.Log.error(this.logTag + err, err.trace))
+                }
+            }
         )
-
-        msg.onSendComplete().then(ret => {
-            if (ret && ret instanceof ResponseMessenger)
-                this.reply(ret);
-        }).catch(err => { })
     }
 
     get psid() {
