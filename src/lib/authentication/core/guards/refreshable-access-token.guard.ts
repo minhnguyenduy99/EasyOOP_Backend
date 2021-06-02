@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 import { AuthenticationService } from "../services";
 import { BaseAuthGuard } from "./base-auth.guard";
-import { RefreshTokenExtractor } from "../utils";
+import { InjectAccessToken, RefreshTokenExtractor } from "../utils";
 
 @Injectable()
 export class RefreshableAccessTokenGuard extends BaseAuthGuard(
@@ -21,10 +21,7 @@ export class RefreshableAccessTokenGuard extends BaseAuthGuard(
         if (user) {
             return user;
         }
-        console.log(info);
-        console.log(err);
-        console.log("refresh user access token");
-        // The access token is presented but invalid
+        // The access token is available but invalid
         if (!this.isNoAuthTokenError(info)) {
             const authError =
                 err ||
@@ -45,7 +42,8 @@ export class RefreshableAccessTokenGuard extends BaseAuthGuard(
         const accessToken = await this.authService.generateAccessToken(
             validatedUser,
         );
-        validatedUser.accessToken = accessToken;
+        // inject access token to header
+        InjectAccessToken(req, accessToken);
         return validatedUser;
     }
 

@@ -2,13 +2,11 @@ import { applyDecorators, UseGuards, UseInterceptors } from "@nestjs/common";
 import { AccessTokenGuard } from "../guards";
 import { RefreshableAccessTokenGuard } from "../guards";
 import {
-    AttachRoleInterceptor,
-    AttachTokenInterceptor,
-    ClearTokenCookieInterceptor,
-    LoginAttachTokenInterceptor,
-    SetRequestTokensInterceptor,
+    AttachAuthInfoInterceptor,
+    ClearAuthInfoInterceptor,
+    LoginAttachAuthInfoInterceptor,
+    SetAuthInfoInterceptor,
 } from "../interceptors";
-
 export interface TokenAuthOptions {
     autoRefresh?: boolean;
     attachCookies?: boolean;
@@ -23,16 +21,15 @@ export const TokenAuth = (options?: TokenAuthOptions) => {
     const { autoRefresh = true, attachCookies = true, isLogin = false } =
         options ?? {};
     const guard = autoRefresh ? RefreshableAccessTokenGuard : AccessTokenGuard;
-    const interceptors = [SetRequestTokensInterceptor] as any[];
+    const interceptors = [SetAuthInfoInterceptor] as any[];
     if (attachCookies && autoRefresh) {
         if (isLogin) {
-            interceptors.push(LoginAttachTokenInterceptor);
+            interceptors.push(LoginAttachAuthInfoInterceptor);
         } else {
-            interceptors.push(AttachTokenInterceptor);
+            interceptors.push(AttachAuthInfoInterceptor);
         }
-        interceptors.push(AttachRoleInterceptor);
     } else {
-        interceptors.push(ClearTokenCookieInterceptor);
+        interceptors.push(ClearAuthInfoInterceptor);
     }
 
     return applyDecorators(UseGuards(guard), UseInterceptors(...interceptors));

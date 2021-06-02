@@ -16,7 +16,7 @@ export const DECORATORS = {
 };
 
 export const REQUEST_KEYS = {
-    AUTH_TOKEN: "authToken",
+    AUTH_INFO: "authToken",
     ACCESS_TOKEN_COOKIE: "accessToken",
     REFRESH_TOKEN_COOKIE: "refreshToken",
     ROLE_COOKIE: "auth_role",

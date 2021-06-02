@@ -23,16 +23,16 @@ export class AttachTokenInterceptor implements NestInterceptor {
         const user = req["user"] as AuthUser;
         return next.handle().pipe(
             map((data) => {
-                const accessToken = user.accessToken;
-                const refreshToken = user.refreshToken;
+                // const accessToken = user.accessToken;
+                // const refreshToken = user.refreshToken;
 
-                this.setAccessTokenCookie(res, req, accessToken);
-                this.setRefreshTokenCookie(
-                    res,
-                    req,
-                    refreshToken,
-                    new Date(user.token_expired),
-                );
+                // this.setAccessTokenCookie(res, req, accessToken);
+                // this.setRefreshTokenCookie(
+                //     res,
+                //     req,
+                //     refreshToken,
+                //     new Date(user.token_expired),
+                // );
 
                 return data;
             }),

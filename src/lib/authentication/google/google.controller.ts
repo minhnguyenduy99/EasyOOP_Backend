@@ -12,14 +12,12 @@ import { Request } from "express";
 import {
     AuthenticationService,
     AuthUserDecorator,
-    AuthUserDto,
     CreateUserDTO,
     GlobalAuthUserService,
-    LoginAttachTokenInterceptor,
+    LoginAttachAuthInfoInterceptor,
+    LoginResultDTO,
 } from "../core";
 import { GoogleUser } from "./interfaces";
-import { AuthGoogleUserDTO } from "./dto";
-import { CommonResponse, ToObjectTransform } from "src/lib/types";
 import { GoogleTokenIdGuard } from "./guards";
 import { GoogleUserService } from "./services";
 
@@ -39,31 +37,29 @@ export class GoogleController {
     }
 
     @Get("/redirect")
-    @Serialize(
-        CommonResponse(AuthGoogleUserDTO, { dataTransform: ToObjectTransform }),
-        true,
-    )
+    @Serialize(LoginResultDTO())
     async authRedirect(@Req() request) {
-        const user = request["user"] as GoogleUser;
-        const googleUser = await this.userService.getUserById(user.id);
-        if (googleUser) {
-            return {
-                code: 0,
-                data: googleUser,
-            };
+        const googleUser = request["user"] as GoogleUser;
+        let user = await this.userService.getUserById(googleUser.id);
+        if (!user) {
+            const createUserResult = await this.googleUserService.createUser(
+                googleUser as any,
+            );
+            if (createUserResult.error) {
+                throw new BadRequestException(createUserResult);
+            }
+            user = createUserResult.data;
         }
-        const result = await this.googleUserService.createUser(
-            user as CreateUserDTO,
-        );
-        if (result.error) {
-            throw new BadRequestException(result);
+        const loginResult = await this.authService.logIn(user);
+        if (loginResult.error) {
+            throw new BadRequestException(loginResult);
         }
-        return result;
+        return loginResult.data;
     }
 
     @Get("/login-with-token")
-    @UseInterceptors(LoginAttachTokenInterceptor)
-    @Serialize(CommonResponse(AuthUserDto))
+    @UseInterceptors(LoginAttachAuthInfoInterceptor)
+    @Serialize(LoginResultDTO())
     @UseGuards(GoogleTokenIdGuard)
     async authByTokenId(@AuthUserDecorator("user") user: GoogleUser) {
         let googleUser = await this.userService.getUserById(user.id);
@@ -80,6 +76,6 @@ export class GoogleController {
         if (loginResult.error) {
             throw new BadRequestException(loginResult);
         }
-        return loginResult;
+        return loginResult.data;
     }
 }

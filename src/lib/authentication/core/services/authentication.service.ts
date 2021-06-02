@@ -20,7 +20,7 @@ export interface IAuthenticationService {
         userId: string,
         role: string,
         payload?: any,
-    ): Promise<ServiceResult<AuthUser>>;
+    ): Promise<ServiceResult<LoginResult>>;
     logOut(userId: string): Promise<void>;
     validateUser(
         usernameOrEmail: string,
@@ -31,7 +31,9 @@ export interface IAuthenticationService {
         payload: RefreshTokenPayload,
     ): Promise<AuthUser>;
     generateAccessToken(user: AuthUserDTO | AuthUser): Promise<string>;
-    resetLoginStateToUser(userOrId: string | AuthUser): Promise<AuthUser>;
+    resetLoginStateToUser(
+        userOrId: string | AuthUser,
+    ): Promise<ServiceResult<LoginResult>>;
 }
 
 @Injectable()
@@ -113,11 +115,7 @@ export class AuthenticationService implements IAuthenticationService {
         if (!isPasswordValid) {
             return null;
         }
-        const loginResult = await this.logIn(user);
-        if (loginResult.error) {
-            return null;
-        }
-        return loginResult.data;
+        return user;
     }
 
     async validateAccessTokenPayload(payload: AccessTokenPayload) {
@@ -175,7 +173,7 @@ export class AuthenticationService implements IAuthenticationService {
         userId: string | AuthUser,
         role?: string,
         payload?: any,
-    ): Promise<ServiceResult<AuthUser>> {
+    ): Promise<ServiceResult<LoginResult>> {
         let user: AuthUser = userId as AuthUser;
         role = role ?? this.userService.getDefaultRole();
 
@@ -207,11 +205,13 @@ export class AuthenticationService implements IAuthenticationService {
                 expire,
                 role,
             });
-            user.accessToken = accessToken;
-            user.refreshToken = refreshToken;
             return {
                 code: 0,
-                data: user,
+                data: {
+                    user,
+                    accessToken,
+                    refreshToken,
+                },
             };
         } catch (err) {
             console.log(err);
@@ -224,14 +224,22 @@ export class AuthenticationService implements IAuthenticationService {
 
     async resetLoginStateToUser(
         userOrId: string | AuthUser,
-    ): Promise<AuthUser> {
+    ): Promise<ServiceResult<LoginResult>> {
         const user = await this.getAuthUserInstance(userOrId);
         if (!user) {
-            return null;
+            return {
+                code: -1,
+                error: "Invalid user",
+            };
         }
-        const accesssToken = await this.generateAccessToken(user);
-        user.accessToken = accesssToken;
-        return user;
+        const accessToken = await this.generateAccessToken(user);
+        return {
+            code: 0,
+            data: {
+                user,
+                accessToken,
+            },
+        };
     }
 
     protected async updateUserLoginState(user: AuthUser | any, opts) {
@@ -243,6 +251,9 @@ export class AuthenticationService implements IAuthenticationService {
         user.token_expired = expire;
         user.login_status = LOGIN_STATUSES.LOGINED;
         user.active_role = role;
+        if (role === this.userService.getDefaultRole()) {
+            user.role_id = null;
+        }
         if (user instanceof AuthUser) {
             await user.save();
             return;

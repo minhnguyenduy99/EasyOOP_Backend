@@ -14,13 +14,12 @@ import { Request } from "express";
 import { ResponseSerializerInterceptor, Serialize } from "src/lib/helpers";
 import { CommonResponse } from "src/lib/types";
 import {
-    AttachTokenInterceptor,
     AuthenticationService,
     AuthUserDto,
     GlobalAuthUserService,
+    LoginAttachAuthInfoInterceptor,
     LoginResultDTO,
 } from "../../core";
-import { LoginAttachTokenInterceptor } from "../../core/interceptors/login-attach-token.interceptor";
 import { FacebookTokenGuard } from "../auth-fb-token.guard";
 import { FacebookGuard } from "../auth-fb.guard";
 import { FacebookUserService } from "../auth-fb.service";
@@ -37,15 +36,15 @@ export class FacebookAuthController {
 
     @Get("/login")
     @UseGuards(FacebookGuard)
-    async loginFacebook(@Req() req: Request) {
+    async loginFacebook() {
         return HttpStatus.OK;
     }
 
     @Get("/redirect")
     @UseGuards(FacebookGuard)
-    @Serialize(CommonResponse(LoginResultDTO()))
-    @UseInterceptors(LoginAttachTokenInterceptor)
-    async facebookLoginRedirect(@Req() req: Request, @Res() res): Promise<any> {
+    @Serialize(LoginResultDTO())
+    @UseInterceptors(LoginAttachAuthInfoInterceptor)
+    async facebookLoginRedirect(@Req() req: Request): Promise<any> {
         const fbUser = req["user"] as FacebookUser;
         let user = await this.userService.getUserById(fbUser.id);
         if (!user) {
@@ -59,13 +58,16 @@ export class FacebookAuthController {
             user,
             this.userService.getDefaultRole(),
         );
-        return loginResult;
+        if (loginResult.error) {
+            throw new BadRequestException(loginResult);
+        }
+        return loginResult.data;
     }
 
     @Get("/login-with-token")
     @UseGuards(FacebookTokenGuard)
-    @UseInterceptors(LoginAttachTokenInterceptor)
-    @Serialize(CommonResponse(AuthUserDto))
+    @UseInterceptors(LoginAttachAuthInfoInterceptor)
+    @Serialize(LoginResultDTO())
     async loginWithFacebookToken(@Req() req: Request) {
         const fbUser = req["user"] as FacebookUser;
         let user = await this.userService.getUserById(fbUser.id);
@@ -80,6 +82,9 @@ export class FacebookAuthController {
             user,
             this.userService.getDefaultRole(),
         );
-        return loginResult;
+        if (loginResult.error) {
+            throw new BadRequestException(loginResult);
+        }
+        return loginResult.data;
     }
 }

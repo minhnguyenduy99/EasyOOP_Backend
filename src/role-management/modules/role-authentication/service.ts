@@ -50,14 +50,6 @@ export class RoleAuthenticationService implements IRoleAuthenticationService {
         const result = await this.userAuthService.logIn(user, role, {
             role_id: user.role_id,
         });
-        if (result.error) {
-            return result;
-        }
-        const authUser = result.data as any;
-        authUser.role_id = user.role_id;
-        return {
-            code: result.code,
-            data: authUser,
-        };
+        return result;
     }
 }

@@ -5,6 +5,7 @@ import {
     UseInterceptors,
     Get,
     BadRequestException,
+    InternalServerErrorException,
 } from "@nestjs/common";
 import { ResponseSerializerInterceptor, Serialize } from "src/lib/helpers";
 import { CommonResponse } from "src/lib/types";
@@ -24,12 +25,13 @@ export class AuthController {
 
     @LocalAuth()
     @Post("/login/local")
-    @Serialize(CommonResponse(AuthUserDto))
-    localLogin(@AuthUserDecorator() user: any) {
-        return {
-            code: 0,
-            data: user,
-        };
+    @Serialize(LoginResultDTO())
+    async localLogin(@AuthUserDecorator() user: any) {
+        const loginResult = await this.authService.logIn(user);
+        if (loginResult.error) {
+            throw new InternalServerErrorException();
+        }
+        return loginResult.data;
     }
 
     @TokenAuth({
@@ -43,17 +45,12 @@ export class AuthController {
 
     @Post("/relogin")
     @TokenAuth()
-    @Serialize(CommonResponse(AuthUserDto))
+    @Serialize(LoginResultDTO())
     async reloginAsDefault(@AuthUserDecorator("user") user: any) {
-        const validatedUser = await this.authService.resetLoginStateToUser(
-            user,
-        );
-        if (!validatedUser) {
-            throw new BadRequestException();
+        const loginResult = await this.authService.resetLoginStateToUser(user);
+        if (loginResult.error) {
+            throw new BadRequestException(loginResult);
         }
-        return {
-            code: 0,
-            data: validatedUser,
-        };
+        return loginResult.data;
     }
 }

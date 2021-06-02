@@ -8,8 +8,9 @@ import { Response } from "express";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 import { REQUEST_KEYS } from "../consts";
+import { LoginResult } from "../interfaces";
 
-export class LoginAttachTokenInterceptor implements NestInterceptor {
+export class LoginAttachAuthInfoInterceptor implements NestInterceptor {
     async intercept(
         context: ExecutionContext,
         next: CallHandler<any>,
@@ -17,13 +18,14 @@ export class LoginAttachTokenInterceptor implements NestInterceptor {
         const res = context.switchToHttp().getResponse() as Response;
         return next.handle().pipe(
             map((data) => {
-                const { data: user } = data;
-                this.setAccessTokenCookie(res, user.accessToken);
+                const { user, accessToken, refreshToken } = data as LoginResult;
+                this.setAccessTokenCookie(res, accessToken);
                 this.setRefreshTokenCookie(
                     res,
-                    user.refreshToken,
+                    refreshToken,
                     new Date(user.token_expired),
                 );
+                user.role_id && this.setRoleIDCookie(res, user.role_id);
                 return data;
             }),
         );
@@ -41,5 +43,12 @@ export class LoginAttachTokenInterceptor implements NestInterceptor {
             httpOnly: true,
             expires: expiredIn,
         });
+    }
+
+    protected setRoleIDCookie(res: Response, value: string) {
+        res.cookie(REQUEST_KEYS.ROLE_COOKIE, value, {
+            httpOnly: true,
+        });
+        return;
     }
 }

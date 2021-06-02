@@ -27,7 +27,7 @@ export class RoleAuthenticationController {
     @TokenAuth({
         isLogin: true,
     })
-    @Serialize(CommonResponse(RoleDTO))
+    @Serialize(LoginResultDTO(RoleDTO))
     async roleLogin(
         @Param("type") type: string,
         @AuthUserDecorator() authUser: AuthUserDTO,
@@ -52,6 +52,7 @@ export class RoleAuthenticationController {
         if (result.error) {
             throw new ForbiddenException(result);
         }
-        return result;
+        console.log(result.data);
+        return result.data;
     }
 }
