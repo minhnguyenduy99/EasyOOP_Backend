@@ -25,7 +25,12 @@ export class LoginAttachAuthInfoInterceptor implements NestInterceptor {
                     refreshToken,
                     new Date(user.token_expired),
                 );
-                user.role_id && this.setRoleIDCookie(res, user.role_id);
+                user.role_id &&
+                    this.setRoleIDCookie(
+                        res,
+                        user.role_id,
+                        new Date(user.token_expired),
+                    );
                 return data;
             }),
         );
@@ -45,9 +50,10 @@ export class LoginAttachAuthInfoInterceptor implements NestInterceptor {
         });
     }
 
-    protected setRoleIDCookie(res: Response, value: string) {
+    protected setRoleIDCookie(res: Response, value: string, expiredIn: Date) {
         res.cookie(REQUEST_KEYS.ROLE_COOKIE, value, {
             httpOnly: true,
+            expires: expiredIn,
         });
         return;
     }
