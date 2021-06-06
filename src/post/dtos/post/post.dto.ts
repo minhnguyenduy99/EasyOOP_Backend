@@ -1,5 +1,6 @@
 import { Exclude, Transform, Type } from "class-transformer";
 import { BaseModelSerializer, BasePaginationSerializer } from "src/lib/helpers";
+import { PostTemplate } from "src/post/modules/core";
 import { TagDTO } from "src/tag";
 import { TopicDTO } from "../topic.dto";
 import { PostMetadataDTO } from "./post-metadata.dto";
@@ -51,6 +52,8 @@ export class PostDTO extends BaseModelSerializer {
     content_file_url?: string;
 
     thumbnail_file_url?: string;
+
+    templates?: PostTemplate[];
 }
 
 export class PostWithTagDTO extends BaseModelSerializer {

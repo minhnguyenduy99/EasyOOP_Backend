@@ -27,6 +27,9 @@ export class PostMetadata extends Document {
         required: false,
     })
     author_id: string;
+
+    @Prop()
+    templates: any[];
 }
 
 export const PostMetadataSchema = SchemaFactory.createForClass(PostMetadata);

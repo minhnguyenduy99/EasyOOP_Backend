@@ -68,7 +68,7 @@ export class PostVerificationController {
     }
 
     @Put("/:id/unverify")
-    @Serialize(CommonResponse(PostVerificationDTO))
+    @Serialize(CommonResponse())
     async unverify(
         @Param("id") verificationId: string,
         @AuthUserDecorator() manager: RoleUserData,

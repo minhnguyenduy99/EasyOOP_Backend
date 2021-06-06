@@ -18,9 +18,7 @@ export class PostVerification extends Document {
     })
     status?: number;
 
-    @Prop({
-        default: Date.now(),
-    })
+    @Prop()
     created_date: number;
 
     @Prop()
@@ -49,6 +47,7 @@ export const PostVerificaionSchema = SchemaFactory.createForClass(
 PostVerificaionSchema.pre("save", function (next) {
     if (this.isNew) {
         this.verification_id = GenerateDigitID(15);
+        this.created_date = Date.now();
     }
     next();
 });

@@ -169,6 +169,11 @@ export class PostService implements IPostService {
             post_id: postId,
         });
         this.postExtender
+            .groupWithAdjacentPost(
+                builder,
+                { queryField: "previous_post_id", as: "previous_post" },
+                { queryField: "next_post_id", as: "next_post" },
+            )
             .groupWithMetadata(builder)
             .groupWithTopic(builder)
             .groupWithTags(builder);
@@ -207,6 +212,9 @@ export class PostService implements IPostService {
                                 connectToField: "post_id",
                                 as: "list_posts",
                                 depthField: "order",
+                                restrictSearchWithMatch: {
+                                    post_status: POST_STATUSES.ACTIVE,
+                                },
                             },
                         },
                         {

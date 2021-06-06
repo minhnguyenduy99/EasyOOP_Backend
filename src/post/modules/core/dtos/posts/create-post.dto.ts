@@ -9,6 +9,7 @@ import {
 import { Transform } from "class-transformer";
 import { IsFile } from "src/lib/helpers";
 import { FormFile } from "src/lib/types";
+import { PostTemplate } from "./post-metadata.dto";
 
 export class CreatePostDTO {
     @IsNotEmpty()
@@ -47,4 +48,6 @@ export class CreatePostDTO {
     @IsArray()
     @IsNotEmpty()
     tags: string[];
+
+    templates: PostTemplate[];
 }

@@ -25,7 +25,7 @@ export class PostMetadataService implements IPostMetadataService {
     async create(
         dto: CreatePostMetadataDTO,
     ): Promise<CommitActionResult<PostMetadata>> {
-        const { content_file, thumbnail_file } = dto;
+        const { content_file, thumbnail_file, templates } = dto;
         const [uploadContentResult, uploadThumbnailResult] = await Promise.all([
             this.fileUploader.uploadFile(content_file, {
                 resourceType: "raw",
@@ -60,6 +60,7 @@ export class PostMetadataService implements IPostMetadataService {
             content_file_url: contentFileURL,
             thumbnail_file_id: thumbnailFileId,
             thumbnail_file_url: thumbnailFileURL,
+            templates,
         };
 
         try {

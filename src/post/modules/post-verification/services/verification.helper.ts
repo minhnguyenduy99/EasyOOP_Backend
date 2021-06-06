@@ -87,19 +87,18 @@ export class VerificationHelper {
         const {
             metadata = false,
             topic = false,
+            tag = false,
             postStatus = POST_STATUSES.ACTIVE,
         } = options ?? {};
-        if (postStatus === POST_STATUSES.ACTIVE) {
-            groupWithActivePost(this.postModel);
-        } else {
-            groupWithInactivePost(this.postModel);
-        }
-        if (metadata) {
-            groupWithMetadata(this.metadataModel);
-        }
-        if (topic) {
-            groupWithTopic(this.topicModel);
-        }
+
+        postStatus === POST_STATUSES.ACTIVE
+            ? groupWithActivePost(this.postModel)
+            : groupWithInactivePost(this.postModel);
+
+        metadata && groupWithMetadata(this.metadataModel);
+        topic && groupWithTopic(this.topicModel);
+        tag && groupWithTags();
+
         return this;
 
         function groupWithTopic(topicModel) {
@@ -136,6 +135,19 @@ export class VerificationHelper {
                 removeFields: ["__v", "previous_post_id", "next_post_id"],
                 single: true,
                 as: "post",
+            });
+        }
+
+        function groupWithTags() {
+            return builder.lookup({
+                from: "tags",
+                localField: "post.tags",
+                foreignField: "tag_id",
+                removeFields: ["__v"],
+                single: false,
+                mergeObject: true,
+                mergeOn: "post",
+                as: "post.tags",
             });
         }
 

@@ -4,7 +4,7 @@ import { Model, Types } from "mongoose";
 import { AggregateBuilder, LimitOptions } from "src/lib/database/mongo";
 import { Tag } from "src/tag";
 import { SortOptions } from "../dtos";
-import { PostMetadata, Topic } from "../modules/core";
+import { Post, PostMetadata, Topic } from "../modules/core";
 
 export interface PostFilterOptions {
     author_id?: string;
@@ -16,6 +16,8 @@ export interface PostFilterOptions {
 @Injectable()
 export class PostServiceExtender {
     constructor(
+        @InjectModel(Post.name)
+        private readonly postModel: Model<Post>,
         @InjectModel(PostMetadata.name)
         private readonly postMetadataModel: Model<PostMetadata>,
         @InjectModel(Topic.name)
@@ -54,6 +56,32 @@ export class PostServiceExtender {
             single: true,
             removeFields: ["__v", "_id", "first_post_id"],
             mergeObject: true,
+        });
+        return this;
+    }
+
+    groupWithAdjacentPost(
+        builder: AggregateBuilder,
+        ...fields: { queryField: string; as: string }[]
+    ) {
+        fields.forEach((field) => {
+            builder.lookup({
+                from: this.postModel,
+                localField: field.queryField,
+                foreignField: "post_id",
+                single: true,
+                mergeObject: false,
+                as: field.as,
+                pipeline: [
+                    {
+                        $project: {
+                            post_id: 1,
+                            post_title: 1,
+                        },
+                    },
+                ],
+                removeFields: ["_id", "__v"],
+            });
         });
         return this;
     }

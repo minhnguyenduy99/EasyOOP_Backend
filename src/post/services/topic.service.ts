@@ -10,6 +10,7 @@ import {
     UpdateTopicDTO,
 } from "../dtos";
 import { BaseLimiter } from "../helpers";
+import { POST_STATUSES } from "../modules/core";
 import { Post, Topic } from "../modules/core/models";
 
 export interface ITopicService {
@@ -19,6 +20,10 @@ export interface ITopicService {
         dto: UpdateTopicDTO,
     ): Promise<CommitActionResult<Topic>>;
     searchTopic(
+        keyword: string,
+        limit?: LimitOptions,
+    ): Promise<PaginatedResult>;
+    searchAvailableTopics(
         keyword: string,
         limit?: LimitOptions,
     ): Promise<PaginatedResult>;
@@ -96,11 +101,52 @@ export class TopicService implements ITopicService {
         }
     }
 
+    async searchAvailableTopics(keyword: string, limiter?: LimitOptions) {
+        const { start, limit } = limiter;
+        const regex = RegExp(`${keyword}`, "gi");
+        const builder = new AggregateBuilder();
+
+        this.getAvailableTopics(builder)
+            .lookup({
+                from: this.topicModel,
+                localField: "_id",
+                foreignField: "_id",
+                as: "topic",
+                pipeline: [
+                    {
+                        $match: {
+                            topic_title: {
+                                $regex: regex,
+                            },
+                        },
+                    },
+                ],
+                outer: true,
+                single: true,
+                mergeObject: true,
+                removeFields: ["__v"],
+            })
+            .sort({ topic_order: 1 })
+            .aggregate(this.limiter.limit(start, limit));
+
+        const queriedResult = await this.postModel
+            .aggregate(builder.log(null).build())
+            .exec();
+        const [{ count, results }] = queriedResult;
+        return {
+            count,
+            results,
+        };
+    }
+
     async searchTopic(keyword: string, limiter?: LimitOptions) {
         const { start, limit } = limiter;
         const builder = new AggregateBuilder();
         const regex = RegExp(`${keyword}`, "gi");
         builder
+            .match({
+                post_status: POST_STATUSES.ACTIVE,
+            })
             .aggregate({
                 $group: {
                     _id: "$topic_id",
@@ -121,7 +167,7 @@ export class TopicService implements ITopicService {
                         },
                     },
                 ],
-                outer: false,
+                outer: true,
                 single: true,
                 mergeObject: true,
                 removeFields: ["__v"],
@@ -137,5 +183,56 @@ export class TopicService implements ITopicService {
             count,
             results,
         };
+    }
+
+    protected getAvailableTopics(builder: AggregateBuilder) {
+        builder
+            .aggregate({
+                $group: {
+                    _id: "$topic_id",
+                    post_status: {
+                        $max: "$post_status",
+                    },
+                },
+            })
+            .aggregate({
+                $unionWith: {
+                    coll: this.topicModel.collection.name,
+                    pipeline: [
+                        {
+                            $match: {
+                                first_post_id: null,
+                            },
+                        },
+                        {
+                            $addFields: {
+                                post_status: 0,
+                            },
+                        },
+                        {
+                            $project: {
+                                _id: 1,
+                                post_status: 1,
+                            },
+                        },
+                    ],
+                },
+            })
+            .aggregate({
+                $addFields: {
+                    is_available: {
+                        $cond: [
+                            {
+                                $eq: ["$post_status", 0],
+                            },
+                            true,
+                            false,
+                        ],
+                    },
+                },
+            })
+            .removeFields(["post_status"]);
+
+        return builder;
     }
 }

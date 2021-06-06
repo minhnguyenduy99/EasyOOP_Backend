@@ -7,6 +7,7 @@ import {
 } from "class-validator";
 import { IsFile } from "src/lib/helpers";
 import { FormFile } from "src/lib/types";
+import { PostTemplate } from "src/post/modules/core";
 
 export class CreatePostDTO {
     @IsNotEmpty()
@@ -41,4 +42,6 @@ export class CreatePostDTO {
     tags: string[];
 
     author_id: string;
+
+    templates: PostTemplate[];
 }

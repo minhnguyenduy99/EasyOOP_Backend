@@ -8,4 +8,5 @@ export interface PostGroupOptions {
     topic?: boolean;
     removeFields?: string[];
     postStatus?: number;
+    tag?: boolean;
 }

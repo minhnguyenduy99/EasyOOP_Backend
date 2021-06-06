@@ -77,7 +77,7 @@ export class CreatorPostController {
     @Post()
     @UseFormData({
         fileField: ["content_file", "thumbnail_file"],
-        jsonFields: ["tags"],
+        jsonFields: ["tags", "templates"],
     })
     async createPost(
         @Body() dto: CreatePostDTO,
@@ -104,6 +104,7 @@ export class CreatorPostController {
     @Put("/:post_id")
     @UseFormData({
         fileField: ["content_file", "thumbnail_file"],
+        jsonFields: ["tags", "templates"],
     })
     async updatePost(
         @Param("post_id", ParamValidationPipe)

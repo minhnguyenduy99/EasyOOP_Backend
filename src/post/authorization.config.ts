@@ -13,6 +13,11 @@ export default {
             ],
         },
         {
+            policyName: "creatorActionsOnTopic",
+            entity: "CreatorTopic",
+            actions: ["getAvailableTopics"],
+        },
+        {
             policyName: "managerActionsOnPost",
             entity: "ManagerPostVerification",
             actions: [
@@ -28,6 +33,7 @@ export default {
     assigns: {
         creator: [
             { entity: "CreatorPost", policies: ["creatorActionsOnPost"] },
+            { entity: "CreatorTopic", policies: ["creatorActionsOnTopic"] },
         ],
         manager: [
             {

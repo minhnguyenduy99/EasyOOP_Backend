@@ -10,6 +10,7 @@ import {
     PostVerificationController,
     CreatorPostController,
     CreatorVerificationController,
+    CreatorTopicController,
 } from "./controllers";
 import { BaseLimiter, PostServiceExtender } from "./helpers";
 import { PostService, TopicService } from "./services";
@@ -46,6 +47,7 @@ import { AuthenticationModule } from "src/lib/authentication";
         CreatorPostController,
         CreatorVerificationController,
         PostVerificationController,
+        CreatorTopicController,
     ],
     exports: [TopicService, PostService],
 })

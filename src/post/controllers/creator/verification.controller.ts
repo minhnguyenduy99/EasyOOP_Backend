@@ -116,6 +116,7 @@ export class CreatorVerificationController {
                         options: {
                             metadata: true,
                             topic: true,
+                            tag: true,
                             postStatus,
                         },
                     },

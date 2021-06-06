@@ -372,6 +372,7 @@ export class PostVerificationService implements IPostVerificationService {
         const { post_info, ...input } = dto;
         const verification = await this.verificationModel.findOne({
             post_id: dto.post_id,
+            status: VERIFICATION_STATUS.PENDING,
         });
         if (verification) {
             return {

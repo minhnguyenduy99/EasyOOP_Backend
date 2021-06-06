@@ -156,11 +156,12 @@ export class PostCoreService {
                 error: "Tags are invalid",
             };
         }
-        const { content_file, thumbnail_file, ...postDTO } = dto;
+        const { content_file, thumbnail_file, templates, ...postDTO } = dto;
         // Create post metadata
         const createMetaResult = await this.postMetadataService.create({
             content_file,
             thumbnail_file,
+            templates,
         });
         if (createMetaResult.error) {
             return {
