@@ -5,12 +5,12 @@ export default {
         {
             policyName: "managerRoleFullAccess",
             entity: "manager_roleManagement",
-            actions: ["assignManager", "getById"],
+            actions: ["assignManager", "getById", "updateManager"],
         },
         {
             policyName: "managerReadOnlyAccess",
             entity: "manager_roleManagement",
-            actions: ["getById"],
+            actions: ["getById", "updateManager"],
         },
         {
             policyName: "creatorFullAccess",

@@ -6,6 +6,7 @@ import {
     NotFoundException,
     Param,
     Post,
+    Put,
     UseInterceptors,
 } from "@nestjs/common";
 import { TokenAuth } from "src/lib/authentication";
@@ -46,6 +47,19 @@ export class ManagerController {
         };
     }
 
+    @Put("/:manager_id")
+    @Serialize(CommonResponse(ManagerDTO))
+    async updateManager(
+        @Param("manager_id") managerId: string,
+        @Body() dto: any,
+    ) {
+        const result = await this.managerService.update(managerId, dto);
+        if (result.error) {
+            throw new BadRequestException(result);
+        }
+        return result;
+    }
+
     @Get("/:id")
     @Serialize(CommonResponse(ManagerDTO))
     async getById(@Param("id") managerId: string) {
@@ -55,7 +69,7 @@ export class ManagerController {
         }
         return {
             code: 0,
-            data: result.toObject(),
+            data: result,
         };
     }
 }
