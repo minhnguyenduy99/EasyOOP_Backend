@@ -73,10 +73,7 @@ export class AuthenticationService implements IAuthenticationService {
             usernameOrEmail,
         );
         if (!user) {
-            return {
-                code: -1,
-                error: "User not found",
-            };
+            return ServiceErrors.UserNotFound;
         }
         if (!user.password_required) {
             return {
@@ -95,27 +92,30 @@ export class AuthenticationService implements IAuthenticationService {
                 data: user,
             };
         }
-        return {
-            code: -2,
-            error: "Password is incorrect",
-        };
+        return ServiceErrors.InvalidAuthInfo;
     }
 
-    async loginUserWithPassword(usernameOrEmail: string, password: string) {
+    async loginUserWithPassword(
+        usernameOrEmail: string,
+        password: string,
+    ): Promise<ServiceResult<AuthUser>> {
         const user = await this.userService.getUserByUsernameOrEmail(
             usernameOrEmail,
         );
         if (!user) {
-            return null;
+            return ServiceErrors.InvalidAuthInfo;
         }
         const isPasswordValid = await this.encryptService.compare(
             password,
             user.password,
         );
         if (!isPasswordValid) {
-            return null;
+            return ServiceErrors.InvalidAuthInfo;
         }
-        return user;
+        return {
+            code: 0,
+            data: user,
+        };
     }
 
     async validateAccessTokenPayload(payload: AccessTokenPayload) {

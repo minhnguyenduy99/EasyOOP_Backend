@@ -1,5 +1,5 @@
 import { Type } from "@nestjs/common";
-import { Type as _Type } from "class-transformer";
+import { Expose, Type as _Type } from "class-transformer";
 
 export interface ResponseOptions {
     dataTransform?: (obj) => any;
@@ -25,6 +25,11 @@ export const CommonResponse = (
             return type;
         })
         data?: any;
+
+        @Expose({
+            name: "error_type",
+        })
+        errorType?: string;
 
         error?: string;
 

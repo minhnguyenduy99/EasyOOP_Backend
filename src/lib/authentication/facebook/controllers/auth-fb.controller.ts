@@ -74,7 +74,7 @@ export class FacebookAuthController {
         if (!user) {
             const result = await this.fbAuthService.createUser(fbUser);
             if (result.error) {
-                throw new BadRequestException({ error: result.error });
+                throw new BadRequestException({ result });
             }
             user = result.data;
         }

@@ -15,6 +15,7 @@ import { EventEmitter2 } from "eventemitter2";
 import { USER_EVENTS } from "../events";
 import { InjectModel } from "@nestjs/mongoose";
 import { GlobalAuthUserService } from "./auth-user.service";
+import { ServiceErrors } from "../utils";
 
 export interface IAuthUserService {
     createUser(input: CreateUserDTO): Promise<ServiceResult<AuthUser>>;
@@ -41,7 +42,7 @@ export abstract class BaseAuthUserService implements IAuthUserService {
     @Inject(GlobalAuthUserService)
     protected readonly globalUserService: GlobalAuthUserService;
 
-    async createUser(input: CreateUserDTO) {
+    async createUser(input: CreateUserDTO): Promise<ServiceResult<AuthUser>> {
         const {
             password,
             isActive,
@@ -73,13 +74,9 @@ export abstract class BaseAuthUserService implements IAuthUserService {
         } catch (err) {
             this.logger.verbose(err);
             const error = MongoErrors.isDuplicateKeyError(err);
-            err = error ?? {
-                message: "Create user error",
-            };
-            return {
-                code: -1,
-                error: err,
-            };
+            return error
+                ? ServiceErrors.UsernameOrEmailDuplication
+                : ServiceErrors.ServiceErrors;
         }
     }
 
