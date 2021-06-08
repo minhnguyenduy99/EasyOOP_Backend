@@ -7,19 +7,28 @@ import {
     Param,
     Post,
     Put,
+    Query,
     UseInterceptors,
 } from "@nestjs/common";
 import { TokenAuth } from "src/lib/authentication";
 import { AuthorizeClass, NonAuthorize } from "src/lib/authorization";
 import {
     BodyValidationPipe,
+    QueryValidationPipe,
     ResponseSerializerInterceptor,
     Serialize,
 } from "src/lib/helpers";
+import { PaginationSerializer } from "src/lib/helpers/serializers";
+import {
+    IPaginator,
+    PaginatorFactory,
+    ParsePagePipe,
+} from "src/lib/pagination";
 import { CommonResponse } from "src/lib/types";
 import { RoleAuthorization } from "../decorators";
 import { AssignManagerDTO, ManagerDTO } from "../dtos/manager";
-import { ERRORS, ManagerService } from "../modules/core";
+import { ManagerService, SearchRolesDTO } from "../modules/core";
+import { ERRORS } from "../errors";
 
 @Controller("/managers")
 @TokenAuth()
@@ -29,7 +38,18 @@ import { ERRORS, ManagerService } from "../modules/core";
     entity: "manager_roleManagement",
 })
 export class ManagerController {
-    constructor(private managerService: ManagerService) {}
+    protected paginator: IPaginator;
+    protected readonly DEFAULT_SIZE_PER_PAGE = 6;
+
+    constructor(
+        private managerService: ManagerService,
+        paginatorFactory: PaginatorFactory,
+    ) {
+        this.paginator = paginatorFactory.createPaginator({
+            pageURL: "/creators/search",
+            pageSize: this.DEFAULT_SIZE_PER_PAGE,
+        });
+    }
 
     @Post("/assign/:user_id")
     @Serialize(CommonResponse(ManagerDTO))
@@ -45,6 +65,22 @@ export class ManagerController {
             code: result.code,
             data: result.data.toObject(),
         };
+    }
+
+    @Get("/search/:page")
+    @Serialize(PaginationSerializer(ManagerDTO))
+    async findManagers(
+        @Query(QueryValidationPipe) dto: SearchRolesDTO,
+        @Param("page", ParsePagePipe) page: number,
+    ) {
+        const { results, count } = await this.managerService.findRoles(dto, {
+            groups: [],
+            page,
+        });
+        const paginatedResults = await this.paginator.paginate(results, count, {
+            page,
+        });
+        return paginatedResults;
     }
 
     @Put("/:manager_id")

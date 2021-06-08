@@ -1,10 +1,14 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import {
     AuthenticationService,
+    AuthUserDto,
     LoginResult,
     ServiceResult,
 } from "src/lib/authentication/core";
-import { CreatorService, ERRORS, ManagerService, ROLES } from "../core";
+import { CreatorService, ManagerService, ROLES } from "../core";
+import { CONFIG_KEYS } from "./config";
+import { ERRORS } from "../../errors";
+import { CoreAuthenticationConfig } from "./interfaces";
 
 export interface IRoleAuthenticationService {
     loginAsCreator(userId: string): Promise<ServiceResult<any>>;
@@ -17,6 +21,8 @@ export class RoleAuthenticationService implements IRoleAuthenticationService {
         private userAuthService: AuthenticationService,
         private creatorService: CreatorService,
         private managerService: ManagerService,
+        @Inject(CONFIG_KEYS.MODULE_CONFIG)
+        private config: CoreAuthenticationConfig,
     ) {}
 
     async loginAsCreator(userId: string) {
@@ -43,6 +49,19 @@ export class RoleAuthenticationService implements IRoleAuthenticationService {
 
     async loginAsViewer(userId: string) {
         const result = await this.loginAsRole(userId, ROLES.viewer);
+        return result;
+    }
+
+    async loginAsRoot(rootUser: AuthUserDto) {
+        const { rootRoleID } = this.config;
+        rootUser.role_id = rootRoleID;
+        const result = await this.userAuthService.logIn(
+            rootUser as any,
+            ROLES.admin,
+            {
+                role_id: rootRoleID,
+            },
+        );
         return result;
     }
 

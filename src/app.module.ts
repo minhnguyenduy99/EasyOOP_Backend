@@ -48,7 +48,7 @@ import { TestExaminationModule } from "./test-examination";
             inject: [APP_ENV_CONFIG],
         }),
         AuthorizationModule.forRoot({
-            roles: ["creator", "manager", "viewer"],
+            roles: ["creator", "manager", "viewer", "admin"],
         }),
         // RoleManagementModule,
         ChatbotModule,

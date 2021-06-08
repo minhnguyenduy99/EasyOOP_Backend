@@ -9,7 +9,7 @@ import {
 import { GlobalAuthUserService } from "src/lib/authentication";
 import { ResponseSerializerInterceptor, Serialize } from "src/lib/helpers";
 import { SearchUserDTO } from "../dtos";
-import { ROLES } from "../modules/core";
+import { ERRORS } from "../errors";
 
 @Controller("users")
 @UseInterceptors(ResponseSerializerInterceptor)
@@ -20,14 +20,8 @@ export class UserController {
     @Serialize(SearchUserDTO)
     async searchUserById(@Param("user_id") userId: string) {
         const user = await this.userService.getUserById(userId);
-        if (
-            !user ||
-            !user?.is_active ||
-            user?.roles.indexOf(ROLES.creator) !== -1
-        ) {
-            throw new NotFoundException({
-                error: "User with ID not found",
-            });
+        if (!user || !user?.is_active) {
+            throw new NotFoundException(ERRORS.UserNotFound);
         }
         return user;
     }

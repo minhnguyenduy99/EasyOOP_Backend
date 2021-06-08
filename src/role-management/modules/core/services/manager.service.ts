@@ -41,6 +41,8 @@ export class ManagerService extends BaseRoleService {
     }
 
     getManagerById(managerId: string) {
-        return this.findById(managerId);
+        return this.findById(managerId, {
+            groups: ["user"],
+        });
     }
 }

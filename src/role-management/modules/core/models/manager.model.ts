@@ -31,6 +31,10 @@ ManagerSchema.pre("save", function (next) {
 });
 
 ManagerSchema.index({
+    alias: "text",
+});
+
+ManagerSchema.index({
     role_id: 1,
 });
 

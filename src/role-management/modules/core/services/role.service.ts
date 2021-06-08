@@ -2,9 +2,9 @@ import { Inject, Logger, OnModuleInit, Type } from "@nestjs/common";
 import { ModuleRef } from "@nestjs/core";
 import { Model } from "mongoose";
 import { GlobalAuthUserService } from "src/lib/authentication/core";
+import { ERRORS } from "../../../errors";
 import { SearchRolesDTO } from "../dtos";
-import { ERRORS } from "../helpers";
-import { QueryOptions, RoleSearchOptions, ServiceResult } from "./interfaces";
+import { QueryOptions, ServiceResult } from "./interfaces";
 import { RoleServiceHelper } from "./role-service-helper";
 
 const DEFAULT_RESULT_PER_PAGE = 6;

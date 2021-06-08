@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Inject, Module, OnModuleInit } from "@nestjs/common";
 import { AuthorizationModule } from "src/lib/authorization";
 import {
     CreatorController,

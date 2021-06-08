@@ -29,7 +29,8 @@ import { CommonResponse } from "src/lib/types";
 import { RoleAuthorization, RoleUser } from "../decorators";
 import { RoleUserData } from "../dtos";
 import { CreateCreatorDTO, CreatorDTO } from "../dtos/creator";
-import { CreatorService, ERRORS, ROLES, SearchRolesDTO } from "../modules/core";
+import { CreatorService, ROLES, SearchRolesDTO } from "../modules/core";
+import { ERRORS } from "../errors";
 
 @Controller("creators")
 @UseInterceptors(ResponseSerializerInterceptor)

@@ -8,15 +8,15 @@ import {
 } from "@nestjs/common";
 import {
     AuthUserDecorator,
-    AuthUserDTO,
+    AuthUserDto,
     LoginResultDTO,
     TokenAuth,
 } from "src/lib/authentication/core";
 import { ResponseSerializerInterceptor, Serialize } from "src/lib/helpers";
-import { CommonResponse } from "src/lib/types";
 import { RoleDTO } from "../dtos";
-import { ROLES, ERRORS } from "../modules/core";
+import { ROLES } from "../modules/core";
 import { RoleAuthenticationService } from "../modules/role-authentication";
+import { ERRORS } from "../errors";
 
 @Controller("role-authentication")
 @UseInterceptors(ResponseSerializerInterceptor)
@@ -30,7 +30,7 @@ export class RoleAuthenticationController {
     @Serialize(LoginResultDTO(RoleDTO))
     async roleLogin(
         @Param("type") type: string,
-        @AuthUserDecorator() authUser: AuthUserDTO,
+        @AuthUserDecorator() authUser: AuthUserDto,
     ) {
         const userId = authUser.user_id;
         let result;
@@ -44,15 +44,15 @@ export class RoleAuthenticationController {
             case ROLES.viewer:
                 result = await this.roleAuthentication.loginAsViewer(userId);
                 break;
+            case ROLES.admin:
+                result = await this.roleAuthentication.loginAsRoot(authUser);
+                break;
             default:
-                throw new BadRequestException({
-                    error: "Invalid role type",
-                });
+                throw new BadRequestException(ERRORS.InvalidRoleType);
         }
         if (result.error) {
             throw new ForbiddenException(result);
         }
-        console.log(result.data);
         return result.data;
     }
 }
