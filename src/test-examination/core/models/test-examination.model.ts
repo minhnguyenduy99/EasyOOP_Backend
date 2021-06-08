@@ -15,6 +15,9 @@ export class TestExamination extends Document {
     title: string;
 
     @Prop()
+    topic_id: string;
+
+    @Prop()
     created_date: number;
 
     @Prop({
@@ -65,6 +68,10 @@ TestExamninationSchema.pre("save", function (next) {
 
 TestExamninationSchema.index({
     title: "text",
+});
+
+TestExamninationSchema.index({
+    topic_id: 1,
 });
 
 TestExamninationSchema.index({

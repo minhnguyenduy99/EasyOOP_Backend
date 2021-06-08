@@ -26,6 +26,7 @@ import {
     SentenceDTO,
     TestExaminationDTO,
     TestExaminationService,
+    TestTopicDTO,
 } from "../core";
 import { TEST_AVAILABLE_STATUSES } from "../core/consts";
 
@@ -75,6 +76,13 @@ export class TestExamViewerController {
             },
         );
         return paginatedResult;
+    }
+
+    @Get("/topics")
+    @Serialize(TestTopicDTO)
+    async getTestsGroupedByTopic() {
+        const results = await this.testService.getTestsGroupedByTopic();
+        return results;
     }
 
     @Get("/:testId")

@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
-import { Sentence } from "../models";
+import { Sentence, TestTopic } from "../models";
 import { TestFilter } from "./interfaces";
 
 @Injectable()
@@ -12,6 +12,7 @@ export class ServiceHelper {
     constructor(
         private logger: Logger,
         @InjectModel(Sentence.name) private sentenceModel: Model<Sentence>,
+        @InjectModel(TestTopic.name) private topicModel: Model<TestTopic>,
     ) {
         this.builder = new AggregateBuilder();
     }
@@ -79,6 +80,51 @@ export class ServiceHelper {
                     },
                 },
             });
+        return this;
+    }
+
+    groupByTopic(queryFields: string[] = ["test_id", "title"]) {
+        const projects = queryFields.reduce(
+            (pre, cur) => Object.assign(pre, { [cur]: `$${cur}` }),
+            {},
+        );
+        this.builder
+            .aggregate({
+                $group: {
+                    _id: "$topic_id",
+                    list_tests: {
+                        $push: projects,
+                    },
+                },
+            })
+            .aggregate({
+                $addFields: {
+                    topic_id: "$_id",
+                },
+            })
+            .lookup({
+                from: this.topicModel,
+                localField: "_id",
+                foreignField: "topic_id",
+                single: true,
+                mergeObject: true,
+                as: "topic",
+                removeFields: ["__v"],
+            });
+        return this;
+    }
+
+    joinWithTopic(localField = "topic_id") {
+        this.builder.lookup({
+            from: this.topicModel,
+            localField: localField,
+            foreignField: "topic_id",
+            single: true,
+            mergeObject: true,
+            as: "topic",
+            removeFields: ["__v"],
+        });
+
         return this;
     }
 

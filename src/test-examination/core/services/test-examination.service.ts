@@ -15,8 +15,6 @@ import { ServiceResult } from "src/test-examination/helpers";
 import { SentenceService } from "./sentence.service";
 import { ServiceHelper } from "./service-helper";
 import { SentenceQueryOptions, TestQueryOptions } from "./interfaces";
-import { AggregateBuilder } from "src/lib/database/mongo";
-import { ResultLimiter } from "src/lib/pagination";
 
 @Injectable()
 export class TestExaminationService {
@@ -41,6 +39,12 @@ export class TestExaminationService {
             TEST_AVAILABLE_STATUSES.AVAILABLE,
         );
         return createTestResult;
+    }
+
+    async getTestsGroupedByTopic(): Promise<any[]> {
+        const builder = this.serviceHelper.groupByTopic().joinWithTopic();
+        const results = await this.testModel.aggregate(builder.build()).exec();
+        return results;
     }
 
     async updateTest(

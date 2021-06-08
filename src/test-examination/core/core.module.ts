@@ -7,6 +7,8 @@ import {
     TestExamninationSchema,
     TestResult,
     TestResultSchema,
+    TestTopic,
+    TestTopicSchema,
 } from "./models";
 import {
     SentenceService,
@@ -28,6 +30,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
             { name: TestExamination.name, schema: TestExamninationSchema },
             { name: Sentence.name, schema: SentenceSchema },
             { name: TestResult.name, schema: TestResultSchema },
+            { name: TestTopic.name, schema: TestTopicSchema },
         ]),
         CacheModule.register(),
     ],
