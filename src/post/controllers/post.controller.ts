@@ -81,6 +81,14 @@ export class PostController {
         return paginatedResults;
     }
 
+    @Get("/topics")
+    @UseInterceptors(ClassSerializerInterceptor)
+    @Serialize(PostWithTopicDTO)
+    async getPostsGroupedByTopic() {
+        const results = await this.postService.getPostsGroupedByTopic();
+        return results;
+    }
+
     @Get("/topic/:topic_id")
     @UseInterceptors(ClassSerializerInterceptor)
     @Serialize(PostWithTopicDTO)

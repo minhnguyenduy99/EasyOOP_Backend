@@ -47,6 +47,7 @@ export interface IPostService {
         tags: string[],
         limit?: LimitOptions,
     ): Promise<PostWithTagDTO>;
+    getPostsGroupedByTopic(): Promise<any>;
     deletePost(postId: string): Promise<CommitActionResult<string>>;
 }
 
@@ -182,8 +183,9 @@ export class PostService implements IPostService {
         return result?.[0];
     }
 
-    async getPostByTopic(topicId: string): Promise<any> {
-        const topic = await this.topicModel.findById(topicId);
+    async getPostByTopic(topic: string | Topic): Promise<any> {
+        typeof topic === "string" &&
+            (topic = await this.topicModel.findById(topic));
         if (!topic) {
             return null;
         }
@@ -249,6 +251,20 @@ export class PostService implements IPostService {
             ...topic.toObject(),
             list_posts: [firstPost].concat(nextPosts),
         };
+    }
+
+    async getPostsGroupedByTopic(): Promise<any[]> {
+        try {
+            const listTopics = await this.topicModel.find();
+            const results = [];
+            for (const topic of listTopics) {
+                const result = await this.getPostByTopic(topic);
+                results.push(result);
+            }
+            return results;
+        } catch (err) {
+            this.logger.error(err, err.trace);
+        }
     }
 
     async getPostsByTag(
