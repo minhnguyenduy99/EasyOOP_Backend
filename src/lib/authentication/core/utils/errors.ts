@@ -9,6 +9,11 @@ export default {
         errorType: "Authentication.DuplicateInfo",
         error: "Username or email already exists",
     },
+    InvalidAccessToken: {
+        code: -3,
+        errorType: "Authentication.InvalidAccessToken",
+        error: "Access token is invalid",
+    },
     UserNotFound: {
         code: -5,
         errorType: "Authentication.UserNotFound",

@@ -29,7 +29,7 @@ export class AuthController {
     async localLogin(@AuthUserDecorator() user: any) {
         const loginResult = await this.authService.logIn(user);
         if (loginResult.error) {
-            throw new InternalServerErrorException();
+            throw new BadRequestException(loginResult);
         }
         return loginResult.data;
     }

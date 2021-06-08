@@ -181,10 +181,7 @@ export class AuthenticationService implements IAuthenticationService {
             user = await this.userService.getUserById(userId);
         }
         if (!user || user.roles.indexOf(role) === -1) {
-            return {
-                code: -1,
-                error: "User is invalid",
-            };
+            return ServiceErrors.InvalidAuthInfo;
         }
         user.active_role = role;
         try {
