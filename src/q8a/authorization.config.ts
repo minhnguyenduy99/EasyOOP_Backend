@@ -27,5 +27,11 @@ export default {
                 policies: ["qandaFullAccess"],
             },
         ],
+        admin: [
+            {
+                entity: "qanda",
+                policies: ["qandaFullAccess"],
+            },
+        ],
     },
 } as AuthFeatureConfig;

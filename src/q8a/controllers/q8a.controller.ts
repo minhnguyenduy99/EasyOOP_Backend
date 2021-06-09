@@ -1,7 +1,6 @@
 import {
     BadRequestException,
     Body,
-    ClassSerializerInterceptor,
     Controller,
     Get,
     NotFoundException,
@@ -12,7 +11,7 @@ import {
     UseGuards,
     UseInterceptors,
 } from "@nestjs/common";
-import { IsPublic, TokenAuth } from "src/lib/authentication";
+import { TokenAuth } from "src/lib/authentication";
 import { AuthorizeClass, NonAuthorize } from "src/lib/authorization";
 import { AuthorizationGuard } from "src/lib/authorization/guards/authorization-guard";
 import {
@@ -35,6 +34,7 @@ import {
     UpdateQ8ADTO,
 } from "../dtos";
 import { Q8AService } from "../services/q8a.service";
+import ERRORS from "../errors";
 
 @Controller("/q8a")
 @UseGuards(RoleAuthorizationGuard)
@@ -135,9 +135,7 @@ export class Q8AController {
     async getQ8AByTag(@Param("tag_id") tagId: string) {
         const result = await this.q8aService.getQ8AByTag(tagId);
         if (!result) {
-            throw new NotFoundException({
-                error: "Invalid Q&A ID",
-            });
+            throw new NotFoundException(ERRORS.InvalidTag);
         }
         return result;
     }
