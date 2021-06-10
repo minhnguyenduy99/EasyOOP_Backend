@@ -15,6 +15,7 @@ export interface SentenceQueryOptions {
 export interface TestFilter {
     title?: string;
     creator_id?: string;
+    topic_id?: string;
     verifying_status?: number;
     type?: number;
 }

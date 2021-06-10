@@ -18,10 +18,11 @@ export class ServiceHelper {
     }
 
     filter(filter: TestFilter) {
-        const { title, creator_id, verifying_status, type } = filter;
+        const { title, creator_id, verifying_status, type, topic_id } = filter;
         this.builder.match({
             ...(title && { $text: { $search: title } }),
             ...(creator_id && { creator_id }),
+            ...(topic_id && { topic_id }),
             ...(verifying_status && { verifying_status }),
             ...(type && { type }),
         });
@@ -114,13 +115,13 @@ export class ServiceHelper {
         return this;
     }
 
-    joinWithTopic(localField = "topic_id") {
+    groupWithTopic(localField = "topic_id", merge = true) {
         this.builder.lookup({
             from: this.topicModel,
             localField: localField,
             foreignField: "topic_id",
             single: true,
-            mergeObject: true,
+            mergeObject: merge,
             as: "topic",
             removeFields: ["__v"],
         });

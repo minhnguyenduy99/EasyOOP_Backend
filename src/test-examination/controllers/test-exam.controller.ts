@@ -11,6 +11,7 @@ import {
     Post,
     Put,
     Query,
+    UseGuards,
     UseInterceptors,
 } from "@nestjs/common";
 import {
@@ -18,6 +19,7 @@ import {
     AuthUserDto,
     TokenAuth,
 } from "src/lib/authentication";
+import { AuthorizeClass, NonAuthorize } from "src/lib/authorization";
 import {
     BodyValidationPipe,
     QueryValidationPipe,
@@ -31,6 +33,7 @@ import {
     ParsePagePipe,
 } from "src/lib/pagination";
 import { CommonResponse } from "src/lib/types";
+import { RoleAuthorizationGuard } from "src/role-management";
 import {
     CreateSentenceDTO,
     CreateTestExaminationDTO,
@@ -40,6 +43,7 @@ import {
     SentenceService,
     TestExaminationDTO,
     TestExaminationService,
+    TestTopicDTO,
     UpdateSentenceDTO,
     UpdateTestExaminationDTO,
 } from "../core";
@@ -47,7 +51,11 @@ import { ERRORS } from "../helpers";
 
 @Controller("exams")
 @TokenAuth()
+@UseGuards(RoleAuthorizationGuard)
 @UseInterceptors(ResponseSerializerInterceptor)
+@AuthorizeClass({
+    entity: "testExamination",
+})
 export class TestExaminationController {
     protected readonly TEST_LIMIT = 10;
     protected readonly SENTENCES_PER_TEST_LIMIT = 10;
@@ -69,6 +77,13 @@ export class TestExaminationController {
         });
     }
 
+    @Get("/topics/all")
+    @Serialize(TestTopicDTO)
+    async getAllTopics() {
+        const topics = await this.testService.getAllTopics();
+        return topics;
+    }
+
     @Post()
     @Serialize(CommonResponse(TestExaminationDTO))
     async createTest(
@@ -84,6 +99,7 @@ export class TestExaminationController {
     }
 
     @Get("/search")
+    @NonAuthorize()
     @Serialize(PaginationSerializer(TestExaminationDTO))
     async searchTest(
         @Query(QueryValidationPipe) search: SearchTestDTO,

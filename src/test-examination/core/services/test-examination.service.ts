@@ -8,7 +8,7 @@ import {
     UpdateSentenceDTO,
     UpdateTestExaminationDTO,
 } from "../dtos";
-import { Sentence, TestExamination } from "../models";
+import { Sentence, TestExamination, TestTopic } from "../models";
 import { TEST_STATUSES, TEST_TYPES, TEST_AVAILABLE_STATUSES } from "../consts";
 import { ERRORS } from "../../helpers";
 import { ServiceResult } from "src/test-examination/helpers";
@@ -23,6 +23,8 @@ export class TestExaminationService {
         private testModel: Model<TestExamination>,
         @InjectModel(Sentence.name)
         private sentenceModel: Model<Sentence>,
+        @InjectModel(TestTopic.name)
+        private topicModel: Model<TestTopic>,
         private logger: Logger,
         private sentenceService: SentenceService,
         private serviceHelper: ServiceHelper,
@@ -41,8 +43,13 @@ export class TestExaminationService {
         return createTestResult;
     }
 
+    async getAllTopics() {
+        const topics = await this.topicModel.find();
+        return topics;
+    }
+
     async getTestsGroupedByTopic(): Promise<any[]> {
-        const builder = this.serviceHelper.groupByTopic().joinWithTopic();
+        const builder = this.serviceHelper.groupByTopic().groupWithTopic();
         const results = await this.testModel.aggregate(builder.build()).exec();
         return results;
     }
@@ -51,6 +58,10 @@ export class TestExaminationService {
         testId: string,
         dto: UpdateTestExaminationDTO,
     ): Promise<ServiceResult<any>> {
+        const topic = await this.isTopicExist(dto.topic_id);
+        if (!topic) {
+            return ERRORS.TestTopicNotFound;
+        }
         try {
             const test = await this.testModel.findOneAndUpdate(
                 {
@@ -124,19 +135,20 @@ export class TestExaminationService {
     }
 
     async searchTest(dto: SearchTestDTO, queryOptions?: TestQueryOptions) {
-        console.log(dto);
         const {
             title = null,
             creator_id = null,
             sort_by = "created_date",
+            topic_id = null,
             sort_order = -1,
             verifying_status,
             type,
         } = dto;
         const { start = 0, limit } = queryOptions;
         const aggregates = this.serviceHelper
-            .filter({ title, creator_id, verifying_status, type })
+            .filter({ title, creator_id, verifying_status, type, topic_id })
             .sort({ sort_by, sort_order })
+            .groupWithTopic("topic_id", false)
             .limit({ start, limit })
             .build();
 
@@ -297,7 +309,6 @@ export class TestExaminationService {
         const {
             data: { sentence_ids },
         } = createSentenceResult;
-        console.log(test);
         try {
             await this.testModel.updateOne(
                 {
@@ -457,6 +468,10 @@ export class TestExaminationService {
             ...dto,
             verifying_status: status,
         };
+        const topic = await this.isTopicExist(dto.topic_id);
+        if (!topic) {
+            return ERRORS.TestTopicNotFound;
+        }
         try {
             const result = await this.testModel.create(input);
             return {
@@ -467,5 +482,12 @@ export class TestExaminationService {
             this.logger.error(err);
             return ERRORS.ServiceError;
         }
+    }
+
+    protected async isTopicExist(topicId: string) {
+        const topic = await this.topicModel.findOne({
+            topic_id: topicId,
+        });
+        return !!topic;
     }
 }

@@ -11,6 +11,9 @@ export class CreateTestExaminationDTO {
     @IsIn(Object.values(TEST_TYPES))
     type: number;
 
+    @IsNotEmpty()
+    topic_id: string;
+
     @IsOptional()
     @IsNumber()
     limited_time?: number;
@@ -29,6 +32,9 @@ export class UpdateTestExaminationDTO {
     @IsNotEmpty()
     @IsIn(Object.values(TEST_TYPES))
     type: number;
+
+    @IsNotEmpty()
+    topic_id: string;
 
     @IsNumber()
     limited_time?: number;
@@ -52,6 +58,10 @@ export class SearchTestDTO {
     @Transform(({ value }) => parseInt(value ?? 0))
     @IsNumber()
     verifying_status?: number;
+
+    @IsOptional()
+    @Transform(({ value }) => value ?? null)
+    topic_id?: string;
 
     @IsOptional()
     @Transform(({ value }) => parseInt(value ?? 0))
