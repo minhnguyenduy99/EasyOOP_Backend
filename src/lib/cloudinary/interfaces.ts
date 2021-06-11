@@ -4,11 +4,7 @@ export interface CloudinaryModuleAsyncOption
     extends Pick<ModuleMetadata, "imports"> {
     useFactory: (
         ...args: any[]
-    ) =>
-        | CloudinaryConfig
-        | string
-        | Promise<string>
-        | Promise<CloudinaryConfig>;
+    ) => CloudinaryConfig | Promise<CloudinaryConfig>;
     inject?: any[];
 }
 
@@ -20,6 +16,9 @@ export interface CloudinaryConfig {
     cloud_name: string;
     api_key: string;
     api_secret: string;
+
+    // custom key
+    rootFolder?: string;
 }
 
 export interface CloudinaryFeatureModuleOption {

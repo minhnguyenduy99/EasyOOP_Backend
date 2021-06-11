@@ -8,6 +8,7 @@ export const APP_CONFIG_KEY = {
     HTTPS: "HTTPS",
     FIREBASE_CONFIG_FILE: "FIREBASE_FILENAME",
     CLOUDINARY_URL: "CLOUDINARY_URL",
+    CLOUDINARY_CONFIG: "CLOUDINARY.CONFIG",
 };
 
 // Get the value from environment and set it to a variable
@@ -19,4 +20,10 @@ export const AppConfig = () => ({
     [APP_CONFIG_KEY.HTTPS]: process.env.IS_HOST_HTTPS || false,
     [APP_CONFIG_KEY.FIREBASE_CONFIG_FILE]: process.env.FIREBASE_CONFIG_FILE,
     [APP_CONFIG_KEY.CLOUDINARY_URL]: process.env.CLOUDINARY_URL,
+    [APP_CONFIG_KEY.CLOUDINARY_CONFIG]: {
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+        rootFolder: process.env.CLOUDINARY_ROOT_FOLDER,
+    },
 });

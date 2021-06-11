@@ -1,18 +1,20 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { v2 } from "cloudinary";
-import { CLOUDINARY_MODULE_CONFIG } from "./consts";
+import { CLOUDINARY_CONFIG_TOKEN, CLOUDINARY_MODULE_CONFIG } from "./consts";
 import { CloudinaryOutput, DeleteFileOptions, UploadFileOptions } from "./dto";
-import { CloudinaryModuleConfig } from "./interfaces";
+import { CloudinaryConfig, CloudinaryModuleConfig } from "./interfaces";
 
 @Injectable()
 export class CloudinaryService {
     constructor(
         @Inject(CLOUDINARY_MODULE_CONFIG)
         private readonly config: CloudinaryModuleConfig,
+        @Inject(CLOUDINARY_CONFIG_TOKEN)
+        private readonly globalConfig: CloudinaryConfig,
     ) {}
 
     get folder() {
-        return this.config.folder;
+        return `${this.globalConfig.rootFolder}/${this.config.folder}`;
     }
 
     async uploadFile(
@@ -66,6 +68,9 @@ export class CloudinaryService {
         }
     }
 
+    /**
+     * @deprecated
+     */
     async deleteBulkFiles(publicIds: string[]) {
         try {
             const response = await v2.api.delete_resources(publicIds);

@@ -22,7 +22,7 @@ export class CloudinaryModule implements OnModuleInit {
     constructor(
         @Inject(CLOUDINARY_CONFIG_TOKEN)
         @Optional()
-        private config: string | CloudinaryConfig,
+        private config: CloudinaryConfig,
     ) {}
 
     onModuleInit() {
@@ -33,14 +33,13 @@ export class CloudinaryModule implements OnModuleInit {
     }
 
     static forRoot(options: CloudinaryModuleOption): DynamicModule {
-        const { connectionUri } = options;
         return {
             module: CloudinaryModule,
             global: true,
             providers: [
                 {
                     provide: CLOUDINARY_CONFIG_TOKEN,
-                    useValue: connectionUri,
+                    useValue: options,
                 },
             ],
         };
@@ -59,6 +58,7 @@ export class CloudinaryModule implements OnModuleInit {
                     inject,
                 },
             ],
+            exports: [CLOUDINARY_CONFIG_TOKEN],
         };
     }
 

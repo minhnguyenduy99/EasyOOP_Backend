@@ -4,7 +4,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { MongooseModule } from "@nestjs/mongoose";
 import { AppConfigService } from "./app-config.service";
-import { AppConfig } from "./app.config";
+import { AppConfig, APP_CONFIG_KEY } from "./app.config";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { ChatbotModule } from "./chatbot";
@@ -24,7 +24,7 @@ import { TestExaminationModule } from "./test-examination";
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: ".development.env",
+            envFilePath: ".development.test.env",
             load: [AppConfig],
         }),
         AppConfigModule.forRoot({
@@ -37,15 +37,14 @@ import { TestExaminationModule } from "./test-examination";
         MongooseModule.forRoot(process.env.MONGO_DATABASE_URI),
         MongoIdGeneratorModule,
         CloudinaryModule.forRootAsync({
-            useFactory: (appEnvConfig: AppConfigService) => {
-                const path =
-                    appEnvConfig.configDir() + "/cloudinary.config.json";
-                const config = JSON.parse(
-                    readFileSync(path, { encoding: "utf-8" }),
+            imports: [ConfigModule],
+            useFactory: (configService: ConfigService) => {
+                const config = configService.get(
+                    APP_CONFIG_KEY.CLOUDINARY_CONFIG,
                 );
                 return config;
             },
-            inject: [APP_ENV_CONFIG],
+            inject: [ConfigService],
         }),
         AuthorizationModule.forRoot({
             roles: ["creator", "manager", "viewer", "admin"],
