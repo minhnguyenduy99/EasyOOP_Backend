@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { AggregateBuilder, LimitOptions } from "src/lib/database/mongo";
 import { Post, PostMetadata, POST_STATUSES, Topic } from "../../core";
+import { VERIFICATION_STATUS } from "../consts";
 import { GroupOptions, PostGroupOptions } from "./group-options.interface";
 
 export const GROUP_TYPES = {
@@ -88,12 +89,28 @@ export class VerificationHelper {
             metadata = false,
             topic = false,
             tag = false,
-            postStatus = POST_STATUSES.ACTIVE,
+            verificationStatus = VERIFICATION_STATUS.VERIFIED,
         } = options ?? {};
 
-        postStatus === POST_STATUSES.ACTIVE
-            ? groupWithActivePost(this.postModel)
-            : groupWithInactivePost(this.postModel);
+        let postFilter = null;
+
+        switch (verificationStatus) {
+            case VERIFICATION_STATUS.VERIFIED:
+                postFilter = {
+                    $or: [
+                        { post_status: POST_STATUSES.ACTIVE },
+                        { post_status: POST_STATUSES.PENDING_DELETED },
+                    ],
+                };
+                break;
+            case VERIFICATION_STATUS.CANCEL:
+            case VERIFICATION_STATUS.PENDING:
+                postFilter = {
+                    post_status: { $ne: POST_STATUSES.ACTIVE },
+                };
+        }
+
+        groupWithPosts(this.postModel, postFilter);
 
         metadata && groupWithMetadata(this.metadataModel);
         topic && groupWithTopic(this.topicModel);
@@ -127,11 +144,18 @@ export class VerificationHelper {
             });
         }
 
-        function groupWithPosts(postModel) {
+        function groupWithPosts(postModel, filter) {
             return builder.lookup({
                 from: postModel,
                 localField: "post_id",
                 foreignField: "post_id",
+                ...(filter && {
+                    pipeline: [
+                        {
+                            $match: filter,
+                        },
+                    ],
+                }),
                 removeFields: ["__v", "previous_post_id", "next_post_id"],
                 single: true,
                 as: "post",
@@ -159,7 +183,10 @@ export class VerificationHelper {
                 pipeline: [
                     {
                         $match: {
-                            post_status: POST_STATUSES.ACTIVE,
+                            $or: [
+                                { post_status: POST_STATUSES.ACTIVE },
+                                { post_status: POST_STATUSES.PENDING_DELETED },
+                            ],
                         },
                     },
                 ],
@@ -178,9 +205,18 @@ export class VerificationHelper {
                     pipeline: [
                         {
                             $match: {
-                                post_status: {
-                                    $ne: POST_STATUSES.ACTIVE,
-                                },
+                                $and: [
+                                    {
+                                        post_status: {
+                                            $ne: POST_STATUSES.ACTIVE,
+                                        },
+                                    },
+                                    {
+                                        post_status: {
+                                            $ne: POST_STATUSES.PENDING_DELETED,
+                                        },
+                                    },
+                                ],
                             },
                         },
                     ],

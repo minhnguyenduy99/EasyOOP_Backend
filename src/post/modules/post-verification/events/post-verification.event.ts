@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { PostCoreService } from "../../core";
+import { VERIFICATION_STATUS, VERIFICATION_TYPES } from "../consts";
 import { POST_VERIFICAITON_EVENTS } from "./consts";
 
 @Injectable()
@@ -90,14 +91,22 @@ export class PostVerificationEvents {
 
     @OnEvent(POST_VERIFICAITON_EVENTS.VERIFICATION_CANCEL, { async: true })
     async onPostVerificationCancelled({ verification }: any) {
+        if (verification.type === VERIFICATION_TYPES.DELETED) {
+            const success = await this.postCoreService.activatePost(
+                verification.post_id,
+            );
+            !success &&
+                this.logger.error(
+                    `Cancel deleted post failed: PostID=${verification.post_id}`,
+                );
+            return;
+        }
         const success = await this.postCoreService.destroyInactivePost(
             verification.post_id,
         );
-        if (!success) {
+        !success &&
             this.logger.error(
                 `Destroy inactive post failed: PostID=${verification.post_id}`,
             );
-            return;
-        }
     }
 }

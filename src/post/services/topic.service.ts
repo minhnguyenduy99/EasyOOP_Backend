@@ -219,6 +219,14 @@ export class TopicService implements ITopicService {
                 },
             })
             .aggregate({
+                $group: {
+                    _id: "$_id",
+                    post_status: {
+                        $max: "$post_status",
+                    },
+                },
+            })
+            .aggregate({
                 $addFields: {
                     is_available: {
                         $cond: [

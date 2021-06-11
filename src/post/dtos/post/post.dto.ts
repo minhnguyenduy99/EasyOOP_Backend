@@ -1,4 +1,4 @@
-import { Exclude, Transform, Type } from "class-transformer";
+import { Exclude, Expose, Transform, Type } from "class-transformer";
 import { BaseModelSerializer, BasePaginationSerializer } from "src/lib/helpers";
 import { PostTemplate } from "src/post/modules/core";
 import { TagDTO } from "src/tag";
@@ -28,6 +28,9 @@ export class PostDTO extends BaseModelSerializer {
         return String;
     })
     post_metadata_id: any;
+
+    @Expose()
+    is_pending?: boolean;
 
     @Transform(({ value }) => value?.toString())
     topic_id: string;

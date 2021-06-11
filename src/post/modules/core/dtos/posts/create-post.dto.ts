@@ -50,4 +50,8 @@ export class CreatePostDTO {
     tags: string[];
 
     templates: PostTemplate[];
+
+    post_id?: string;
+
+    next_post_id?: string;
 }

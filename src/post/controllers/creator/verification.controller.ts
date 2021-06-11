@@ -103,10 +103,7 @@ export class CreatorVerificationController {
         @AuthUserDecorator() creator: RoleUserData,
     ) {
         const status = query.status;
-        let postStatus = null;
-        if (status === VERIFICATION_STATUS.VERIFIED) {
-            postStatus = POST_STATUSES.ACTIVE;
-        }
+        let active = status === VERIFICATION_STATUS.PENDING ? false : true;
         const [{ count, results }, groupResult] = await Promise.all([
             this.postVerification.findVerifications(query, {
                 authorId: creator.role_id,
@@ -117,7 +114,8 @@ export class CreatorVerificationController {
                             metadata: true,
                             topic: true,
                             tag: true,
-                            postStatus,
+                            active,
+                            verificationStatus: status,
                         },
                     },
                     {

@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { CloudinaryService } from "src/lib/cloudinary";
+import { POST_ERRORS } from "src/post/helpers";
 import { POST_STATUSES } from "../consts";
 import { CommitActionResult, CreatePostDTO } from "../dtos";
 import { ERRORS } from "../errors";
@@ -22,10 +23,8 @@ export class PostCoreService {
         private logger: Logger,
     ) {}
 
-    async getPostById(postId: string) {
-        return this.postModel.findOne({
-            post_id: postId,
-        });
+    async getPostById(postId: string, active = true) {
+        return this.findPostById(postId, active);
     }
 
     async getPostsWithAllVersions(postId: string) {
@@ -70,16 +69,10 @@ export class PostCoreService {
             postId,
         );
         if (!currentPost) {
-            return {
-                code: -1,
-                error: "Post not found",
-            };
+            return POST_ERRORS.PostNotFound;
         }
         if (!updatedPost) {
-            return {
-                code: -2,
-                error: "Post status is invalid",
-            };
+            return POST_ERRORS.InvalidPostStatus;
         }
         try {
             await this.destroyPost(currentPost);
@@ -106,12 +99,13 @@ export class PostCoreService {
                 post_id: 1,
             },
         );
-        console.log(post?.toObject());
         return post;
     }
 
     async destroyPost(postIdOrPost: string | Post): Promise<boolean> {
-        let post = await this.innerDestroyPost(postIdOrPost);
+        let post = await this.innerDestroyPost(postIdOrPost, {
+            isActive: false,
+        });
         if (!post) {
             return post as boolean;
         }
@@ -132,29 +126,19 @@ export class PostCoreService {
     async createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>> {
         const [topic, previousPost, tagsValid] = await Promise.all([
             this.topicModel.findById(dto.topic_id),
-            dto.previous_post_id === null
+            dto.previous_post_id
                 ? this.findPostById(dto.previous_post_id)
-                : (Promise.resolve(true) as Promise<any>),
+                : (Promise.resolve(false) as Promise<any>),
             this.tagsValid(dto.tags),
         ]);
-        if (!topic || !previousPost) {
+        if (!topic || previousPost === null) {
             if (!topic) {
-                return {
-                    code: -1,
-                    error: "Topic is invalid",
-                };
-            } else {
-                return {
-                    code: -2,
-                    error: "Previous post ID is invalid",
-                };
+                return POST_ERRORS.InvalidTopic;
             }
+            return POST_ERRORS.InvalidPreviousPost;
         }
         if (!tagsValid) {
-            return {
-                code: -3,
-                error: "Tags are invalid",
-            };
+            return POST_ERRORS.InvalidTags;
         }
         const { content_file, thumbnail_file, templates, ...postDTO } = dto;
         // Create post metadata
@@ -164,10 +148,14 @@ export class PostCoreService {
             templates,
         });
         if (createMetaResult.error) {
-            return {
-                code: -4,
-                error: createMetaResult.error,
-            };
+            this.logger.error(createMetaResult.error);
+            return POST_ERRORS.ServiceError;
+        }
+
+        if (dto.next_post_id === undefined) {
+            dto.next_post_id = previousPost
+                ? previousPost.next_post_id // not the first post
+                : topic.first_post_id; // the first post
         }
 
         try {
@@ -175,7 +163,6 @@ export class PostCoreService {
                 ...postDTO,
                 post_metadata_id: createMetaResult.data._id,
                 topic_id: topic._id,
-                next_post_id: previousPost.next_post_id ?? topic.first_post_id,
             };
             const post = await this.postModel.create(inputDoc);
             return {
@@ -184,7 +171,7 @@ export class PostCoreService {
             };
         } catch (err) {
             this.logger.error(err);
-            return ERRORS.ServiceError;
+            return POST_ERRORS.ServiceError;
         }
     }
 
@@ -205,14 +192,18 @@ export class PostCoreService {
                 post.delete(),
                 this.postMetadataModel.findByIdAndDelete(post.post_metadata_id),
             ]);
-            const listFiles = [
-                postMetdata.content_file_id,
-                postMetdata.thumbnail_file_id,
-            ];
-            this.fileUploader.deleteBulkFiles(listFiles).then(({ code }) => {
-                if (code) {
-                    this.logger.error("Delete bulk files failed");
-                }
+            Promise.all([
+                this.fileUploader.deleteFile(postMetdata.content_file_id, {
+                    resource_type: "raw",
+                }),
+                this.fileUploader.deleteFile(postMetdata.thumbnail_file_id),
+            ]).then((results) => {
+                results.forEach(({ code, public_id }) => {
+                    code &&
+                        this.logger.error(
+                            "Error when deleting file: " + public_id,
+                        );
+                });
             });
             return post;
         } catch (err) {
@@ -247,31 +238,34 @@ export class PostCoreService {
     protected async onPostCreated(post: Post) {
         this.logger.verbose("POST CREATION VERIFIED");
         const topic = await this.topicModel.findById(post.topic_id);
-        const firstPost = await this.findPostById(
+        const previousPost = await this.findPostById(
             post.previous_post_id ?? topic.first_post_id,
         );
         // Add to first and update first post id of topic
         if (!post.previous_post_id) {
             topic.first_post_id = post.post_id;
-            await Promise.all([topic.save(), this.addFirst(firstPost, post)]);
+            await Promise.all([
+                topic.save(),
+                this.addFirst(previousPost, post),
+            ]);
             return;
         }
         const nextPost = await this.postModel.findOne({
-            post_id: firstPost.next_post_id,
+            post_id: post.next_post_id,
         });
         // Add last
         if (!nextPost) {
-            await this.addLast(firstPost, post);
+            await this.addLast(previousPost, post);
             return;
         }
-        await this.addBetween(firstPost, nextPost, post);
+        await this.addBetween(previousPost, nextPost, post);
     }
 
     protected async onPostDestroyed(post: Post) {
         this.logger.verbose("POST DELETION VERIFIED");
         // First post of topic
         if (!post.previous_post_id) {
-            this.removeFirst(post);
+            await this.removeFirst(post);
             return;
         }
         // Last post of topic
@@ -301,19 +295,18 @@ export class PostCoreService {
 
     private async removeFirst(post: Post) {
         const nextPost = await this.findPostById(post.next_post_id);
-        if (!nextPost) {
-            await this.topicModel.updateOne(
+        nextPost && (nextPost.previous_post_id = null);
+        await Promise.all([
+            nextPost?.save(),
+            this.topicModel.updateOne(
                 {
                     _id: post.topic_id,
                 },
                 {
-                    first_post_id: null,
+                    first_post_id: nextPost ? nextPost.post_id : null,
                 },
-            );
-            return;
-        }
-        nextPost.previous_post_id = null;
-        await nextPost.save();
+            ),
+        ]);
     }
 
     private async removeLast(post: Post) {

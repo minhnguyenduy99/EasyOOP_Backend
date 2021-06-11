@@ -7,6 +7,6 @@ export interface PostGroupOptions {
     metadata?: boolean;
     topic?: boolean;
     removeFields?: string[];
-    postStatus?: number;
+    verificationStatus?: number;
     tag?: boolean;
 }

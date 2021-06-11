@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { EventEmitter2 } from "eventemitter2";
 import { Model } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
+import { POST_ERRORS } from "src/post/helpers";
 import { CommitActionResult, ERRORS, PostMetadata } from "../../core";
 import { VERIFICATION_STATUS, VERIFICATION_TYPES } from "../consts";
 import {
@@ -141,10 +142,7 @@ export class PostVerificationService implements IPostVerificationService {
                 status: VERIFICATION_STATUS.PENDING,
             });
             if (!verification) {
-                return {
-                    code: -1,
-                    error: "Verification is not found or invalid",
-                };
+                return POST_ERRORS.VerificationNotFound;
             }
             this.eventEmitter.emitAsync(
                 POST_VERIFICAITON_EVENTS.VERIFICATION_CANCEL,
@@ -160,7 +158,7 @@ export class PostVerificationService implements IPostVerificationService {
             };
         } catch (err) {
             this.logger.error(err);
-            return ERRORS.ServiceError;
+            return POST_ERRORS.ServiceError;
         }
     }
 
@@ -184,17 +182,14 @@ export class PostVerificationService implements IPostVerificationService {
                 },
             );
             if (!result) {
-                return {
-                    code: -1,
-                    error: "Verification not found",
-                };
+                return POST_ERRORS.VerificationNotFound;
             }
             return {
                 code: 0,
                 data: result,
             };
         } catch (err) {
-            return ERRORS.ServiceError;
+            return POST_ERRORS.ServiceError;
         }
     }
 
@@ -206,10 +201,7 @@ export class PostVerificationService implements IPostVerificationService {
             verification_id: id,
         });
         if (!verification) {
-            return {
-                code: -1,
-                error: "Verification not found",
-            };
+            return POST_ERRORS.VerificationNotFound;
         }
         let event: string = null;
         switch (verification.type) {
@@ -235,7 +227,7 @@ export class PostVerificationService implements IPostVerificationService {
             };
         } catch (err) {
             this.logger.error(err);
-            return ERRORS.ServiceError;
+            return POST_ERRORS.ServiceError;
         }
     }
 
@@ -247,10 +239,7 @@ export class PostVerificationService implements IPostVerificationService {
             verification_id: id,
         });
         if (!verification) {
-            return {
-                code: -1,
-                error: "Verification not found",
-            };
+            return POST_ERRORS.VerificationNotFound;
         }
         let event: string = null;
         switch (verification.type) {
@@ -276,7 +265,7 @@ export class PostVerificationService implements IPostVerificationService {
             };
         } catch (err) {
             this.logger.error(err);
-            return ERRORS.ServiceError;
+            return POST_ERRORS.ServiceError;
         }
     }
 
@@ -363,6 +352,7 @@ export class PostVerificationService implements IPostVerificationService {
             };
         } catch (err) {
             this.logger.error(err);
+            return POST_ERRORS.ServiceError;
         }
     }
 
@@ -375,10 +365,7 @@ export class PostVerificationService implements IPostVerificationService {
             status: VERIFICATION_STATUS.PENDING,
         });
         if (verification) {
-            return {
-                code: -1,
-                error: "Post is currently on verification pending",
-            };
+            return POST_ERRORS.PostIsPending;
         }
         try {
             input["post_title"] = post_info?.post_title;
@@ -394,7 +381,7 @@ export class PostVerificationService implements IPostVerificationService {
             };
         } catch (err) {
             this.logger.error(err);
-            return ERRORS.ServiceError;
+            return POST_ERRORS.ServiceError;
         }
     }
 }

@@ -4,7 +4,7 @@ import { Model, Types } from "mongoose";
 import { AggregateBuilder, LimitOptions } from "src/lib/database/mongo";
 import { Tag } from "src/tag";
 import { SortOptions } from "../dtos";
-import { Post, PostMetadata, Topic } from "../modules/core";
+import { Post, PostMetadata, POST_STATUSES, Topic } from "../modules/core";
 
 export interface PostFilterOptions {
     author_id?: string;
@@ -31,6 +31,14 @@ export class PostServiceExtender {
         builder.sort({
             [field]: asc ? 1 : -1,
         });
+        return this;
+    }
+
+    filterByActive(builder: AggregateBuilder, active = true) {
+        const match = active
+            ? { post_status: POST_STATUSES.ACTIVE }
+            : { post_status: { $ne: POST_STATUSES.ACTIVE } };
+        builder.match(match);
         return this;
     }
 

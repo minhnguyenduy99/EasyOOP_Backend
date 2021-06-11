@@ -14,7 +14,11 @@ import {
     SortOptions,
 } from "../dtos";
 import { POST_EVENTS } from "../events";
-import { PostFilterOptions, PostServiceExtender } from "../helpers";
+import {
+    PostFilterOptions,
+    PostServiceExtender,
+    POST_ERRORS,
+} from "../helpers";
 import {
     Post,
     PostCoreService,
@@ -37,7 +41,7 @@ export interface IPostService {
         limit?: LimitOptions,
         sort?: SortOptions,
     ): Promise<PaginatedResult>;
-    getPostById(postId: string): Promise<Post>;
+    getPostById(postId: string, active?: boolean): Promise<Post>;
     getPostByTopic(
         topicId: string,
         limit?: LimitOptions,
@@ -48,7 +52,7 @@ export interface IPostService {
         limit?: LimitOptions,
     ): Promise<PostWithTagDTO>;
     getPostsGroupedByTopic(): Promise<any>;
-    deletePost(postId: string): Promise<CommitActionResult<string>>;
+    deletePost(postId: string): Promise<CommitActionResult<Post>>;
 }
 
 @Injectable()
@@ -95,10 +99,7 @@ export class PostService implements IPostService {
             dto.topic_id,
         );
         if (post) {
-            return {
-                code: -7,
-                error: "Topic currently has pending post",
-            };
+            return POST_ERRORS.PostIsPending;
         }
         dto.post_status = POST_STATUSES.PENDING_CREATED;
         const result = await this.postCoreService.createPost(dto);
@@ -111,13 +112,13 @@ export class PostService implements IPostService {
         return result;
     }
 
-    async updatePendingPost(postId: string, dto: CreatePostDTO) {
+    async updatePendingPost(
+        postId: string,
+        dto: CreatePostDTO,
+    ): Promise<CommitActionResult<Post>> {
         const post = await this.postCoreService.getPostById(postId);
         if (!post) {
-            return {
-                code: -1,
-                error: "Post not found",
-            };
+            return POST_ERRORS.PostNotFound;
         }
         if (
             ![
@@ -125,10 +126,7 @@ export class PostService implements IPostService {
                 POST_STATUSES.PENDING_UPDATED,
             ].includes(post.post_status)
         ) {
-            return {
-                code: -2,
-                error: "Post status is invalid",
-            };
+            return POST_ERRORS.InvalidPostStatus;
         }
         dto["post_id"] = postId;
         const [newPost] = await Promise.all([
@@ -147,13 +145,13 @@ export class PostService implements IPostService {
             post_status: POST_STATUSES.ACTIVE,
         });
         if (!post) {
-            return {
-                code: -10,
-                error: "Post not found",
-            };
+            return POST_ERRORS.PostNotFound;
         }
         dto["post_id"] = postId;
         dto.post_status = POST_STATUSES.PENDING_UPDATED;
+        if (dto.previous_post_id === post.previous_post_id) {
+            dto.next_post_id = post.next_post_id;
+        }
         const createPostResult = await this.postCoreService.createPost(dto);
         if (createPostResult.error) {
             return createPostResult;
@@ -164,12 +162,13 @@ export class PostService implements IPostService {
         return createPostResult;
     }
 
-    async getPostById(postId: string): Promise<any> {
+    async getPostById(postId: string, active = true): Promise<any> {
         const builder = new AggregateBuilder();
         builder.match({
             post_id: postId,
         });
         this.postExtender
+            .filterByActive(builder, active)
             .groupWithAdjacentPost(
                 builder,
                 { queryField: "previous_post_id", as: "previous_post" },
@@ -179,8 +178,17 @@ export class PostService implements IPostService {
             .groupWithTopic(builder)
             .groupWithTags(builder);
 
-        const result = await this.postModel.aggregate(builder.build()).exec();
-        return result?.[0];
+        const [count, [result]] = await Promise.all([
+            this.postModel
+                .find({
+                    post_id: postId,
+                })
+                .count()
+                .exec(),
+            this.postModel.aggregate(builder.build()).exec(),
+        ]);
+        result && (result.is_pending = count > 1);
+        return result;
     }
 
     async getPostByTopic(topic: string | Topic): Promise<any> {
@@ -244,7 +252,10 @@ export class PostService implements IPostService {
         let results = await this.postModel.aggregate(builder.build()).exec();
         let [{ firstPost, nextPosts }] = results;
         if (!firstPost || !firstPost?.length) {
-            return [];
+            return {
+                ...topic.toObject(),
+                list_posts: [],
+            };
         }
         firstPost = firstPost[0];
         return {
@@ -264,6 +275,7 @@ export class PostService implements IPostService {
             return results;
         } catch (err) {
             this.logger.error(err, err.trace);
+            return [];
         }
     }
 
@@ -324,29 +336,30 @@ export class PostService implements IPostService {
         } as PostWithTagDTO;
     }
 
-    async deletePost(postId: string) {
-        const post = await this.postModel.findOne({
-            post_id: postId,
-        });
-        if (!post) {
-            return {
-                code: -1,
-                error: "Post not found",
-            };
+    async deletePost(postId: string): Promise<CommitActionResult<Post>> {
+        const [
+            activePost,
+            pendingPost,
+        ] = await this.postCoreService.getPostsWithAllVersions(postId);
+        if (!activePost) {
+            return POST_ERRORS.PostNotFound;
         }
-        post.post_status = POST_STATUSES.PENDING_DELETED;
+        if (pendingPost) {
+            return POST_ERRORS.PostIsPending;
+        }
+        activePost.post_status = POST_STATUSES.PENDING_DELETED;
         try {
-            await post.save();
+            await activePost.save();
             this.eventEmitter.emitAsync(POST_EVENTS.POST_DELETED, {
-                post,
+                activePost,
             });
             return {
                 code: 0,
-                data: postId,
+                data: activePost,
             };
         } catch (err) {
             this.logger.error(err);
-            return ERRORS.ServiceError;
+            return POST_ERRORS.ServiceError;
         }
     }
 }

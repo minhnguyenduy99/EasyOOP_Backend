@@ -5,6 +5,7 @@ import {
     Delete,
     Get,
     InternalServerErrorException,
+    NotFoundException,
     Param,
     ParseBoolPipe,
     ParseIntPipe,
@@ -26,11 +27,12 @@ import {
     PaginatorFactory,
 } from "src/lib/pagination";
 import { CommonResponse } from "src/lib/types";
-import { PostFilterOptions } from "../../helpers";
+import { PostFilterOptions, POST_ERRORS } from "../../helpers";
 import {
     CreatePostDTO,
     GetPostsDTO,
     PaginatedPostDTO,
+    PostDTO,
     SortOptions,
 } from "../../dtos";
 import { PostService } from "../../services";
@@ -129,6 +131,19 @@ export class CreatorPostController {
         };
     }
 
+    @Get("/:post_id")
+    @Serialize(PostDTO)
+    async getPostById(
+        @Param("post_id", ParamValidationPipe)
+        postId: string,
+    ) {
+        const post = await this.postService.getPostById(postId);
+        if (!post) {
+            throw new NotFoundException(POST_ERRORS.PostNotFound);
+        }
+        return post;
+    }
+
     @Serialize(CommonResponse())
     @Put("/pending/:post_id")
     @UseFormData({
@@ -166,8 +181,12 @@ export class CreatorPostController {
             type: VERIFICATION_TYPES.DELETED,
             post_id: postId,
             author_id: author.role_id,
+            post_info: result.data,
         });
-        return result;
+        return {
+            code: result.code,
+            data: result.data.post_id,
+        };
     }
 
     @Get("/search/:page")
@@ -177,7 +196,6 @@ export class CreatorPostController {
         @Query(QueryValidationPipe) searchOptions: GetPostsDTO,
         @AuthUserDecorator() author: RoleUserData,
     ) {
-        console.log(author);
         const {
             search,
             sort_by,
@@ -219,9 +237,9 @@ export class CreatorPostController {
         @AuthUserDecorator() author: RoleUserData,
     ) {
         const status = query.status;
-        let getActivePost = true;
+        let active = true;
         if (status !== VERIFICATION_STATUS.VERIFIED) {
-            getActivePost = false;
+            active = false;
         }
         const [{ count, results }, groupResult] = await Promise.all([
             this.postVerification.findVerifications(query, {
@@ -232,7 +250,7 @@ export class CreatorPostController {
                         options: {
                             metadata: true,
                             topic: true,
-                            isPostActive: getActivePost,
+                            active,
                         },
                     },
                 ],

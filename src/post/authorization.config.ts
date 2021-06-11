@@ -18,7 +18,7 @@ export default {
             actions: ["getAvailableTopics"],
         },
         {
-            policyName: "managerActionsOnPost",
+            policyName: "managerActionsOnVerification",
             entity: "ManagerPostVerification",
             actions: [
                 "verify",
@@ -29,6 +29,11 @@ export default {
                 "findVerifications",
             ],
         },
+        {
+            policyName: "managerActionsOnPosts",
+            entity: "ManagerPost",
+            actions: ["getPostById"],
+        },
     ],
     assigns: {
         creator: [
@@ -38,7 +43,11 @@ export default {
         manager: [
             {
                 entity: "ManagerPostVerification",
-                policies: ["managerActionsOnPost"],
+                policies: ["managerActionsOnVerification"],
+            },
+            {
+                entity: "ManagerPost",
+                policies: ["managerActionsOnPosts"],
             },
         ],
     },
