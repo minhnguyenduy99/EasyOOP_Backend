@@ -34,7 +34,6 @@ export class FacebookTokenStrategy {
         profile: FacebookUser,
         done: DoneHandler,
     ) {
-        console.log(accessToken);
         const emails = profile?.emails;
         if (!emails || !emails?.length) {
             done(

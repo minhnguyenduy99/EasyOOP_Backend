@@ -23,6 +23,5 @@ export class UserEventsHandler {
             role_name: user.roles[0],
             self_added: true,
         });
-        console.log(result);
     }
 }

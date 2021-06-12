@@ -39,7 +39,6 @@ export class CreatePostDTO {
     thumbnail_file: FormFile;
 
     @Transform(({ value }) => {
-        console.log("transform: " + value);
         return value ?? false;
     })
     @IsNotEmpty()

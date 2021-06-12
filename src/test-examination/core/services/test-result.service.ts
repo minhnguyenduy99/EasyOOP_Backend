@@ -186,7 +186,6 @@ export class TestResultService {
     ) {
         dto.result_id = GenerateDigitID(10);
         dto.created_date = Date.now();
-        console.log(dto);
         const result = await this.testResultModel.findOneAndUpdate(
             {
                 user_id: userId,

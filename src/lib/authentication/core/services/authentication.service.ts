@@ -211,7 +211,7 @@ export class AuthenticationService implements IAuthenticationService {
                 },
             };
         } catch (err) {
-            console.log(err);
+            this.logger.error(err);
             return {
                 code: -10,
                 error: "Login user failed",

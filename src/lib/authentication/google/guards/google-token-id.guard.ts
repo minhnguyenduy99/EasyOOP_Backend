@@ -21,7 +21,6 @@ export class GoogleTokenIdGuard implements CanActivate {
             });
         }
         const user = await this.googleAuth.verifyIdToken(googleIdToken);
-        console.log(user);
         if (!user) {
             throw new BadRequestException({
                 error: "Id token is invalid",

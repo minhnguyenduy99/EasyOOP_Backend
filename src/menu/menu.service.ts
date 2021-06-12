@@ -23,8 +23,6 @@ export class MenuService {
             }),
         ]);
 
-        console.log(childrenMenu);
-
         return new MenuDTO(
             currentMenu?.toObject(),
             childrenMenu.map((menu) => new MenuDTO(menu.toObject())),

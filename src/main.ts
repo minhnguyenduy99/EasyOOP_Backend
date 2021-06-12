@@ -4,9 +4,12 @@ import { AppConfigService } from "./app-config.service";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, {
+        logger: ["error"],
+    });
     const appConfig = app.get(AppConfigService);
 
+    app.setGlobalPrefix("/api");
     app.enableCors({
         origin: [/localhost/],
         credentials: true,
@@ -14,10 +17,7 @@ async function bootstrap() {
     });
     app.use(cookieParser());
 
-    const host = appConfig.host();
     const port = appConfig.port();
-    await app.listen(port, host, () => {
-        console.log(`Server started at ${host}:${port}`);
-    });
+    await app.listen(port);
 }
 bootstrap();
