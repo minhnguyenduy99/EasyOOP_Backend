@@ -3,6 +3,7 @@ import { join } from "path";
 export const APP_CONFIG_KEY = {
     HOST: "APP_HOST",
     PORT: "APP_PORT",
+    CORS: "CORS",
     ROOT_DIR: "ROOT_DIR",
     PUBLIC_FOLDER: "PUBLIC_FOLDER",
     HTTPS: "HTTPS",
@@ -16,6 +17,7 @@ export const APP_CONFIG_KEY = {
 export const AppConfig = () => ({
     [APP_CONFIG_KEY.HOST]: process.env.HOST || "localhost",
     [APP_CONFIG_KEY.PORT]: parseInt(process.env.PORT) || 3000,
+    [APP_CONFIG_KEY.CORS]: process.env.CORS,
     [APP_CONFIG_KEY.ROOT_DIR]: join(__dirname, ".."),
     [APP_CONFIG_KEY.PUBLIC_FOLDER]: process.env.PUBLIC_FOLDER,
     [APP_CONFIG_KEY.HTTPS]: process.env.IS_HOST_HTTPS || false,

@@ -24,7 +24,7 @@ import { TestExaminationModule } from "./test-examination";
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: ".development.env",
+            envFilePath: ".production.env",
             load: [AppConfig],
         }),
         AppConfigModule.forRoot({
