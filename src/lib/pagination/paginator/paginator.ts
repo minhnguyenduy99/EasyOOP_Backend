@@ -12,11 +12,13 @@ export default class Paginator implements IPaginator {
         pageURL,
         pageQueryParam = "page",
         pageSize = 5,
+        pageParamType = "query",
     }: PaginationConstruct) {
         this.pageOption = {
             pageURL,
             pageQueryParam,
             pageSize,
+            pageParamType,
         };
     }
 
@@ -47,7 +49,7 @@ export default class Paginator implements IPaginator {
     ): PaginationResult<any> {
         const { pageSize } = this.pageOption;
         const pageCount = Math.ceil(totalCount / pageSize);
-        page = page <= pageCount ? page : pageCount;
+        page = page <= pageCount || pageCount === 0 ? page : pageCount;
         return {
             page: page,
             next:
@@ -74,11 +76,21 @@ export default class Paginator implements IPaginator {
             pageURL,
             placeholders,
         );
-        parsedURL = `${parsedURL}?${pageQueryParam}=${page}`;
+        if (this.pageOption.pageParamType === "query") {
+            parsedURL = `${parsedURL}?${pageQueryParam}=${page}`;
+            Object.keys(queries).forEach((field) => {
+                parsedURL += `&${field}=${queries[field]}`;
+            });
+            return parsedURL;
+        }
+        parsedURL = parsedURL.replace(
+            `{${this.pageOption.pageQueryParam}}`,
+            `${page}`,
+        );
         Object.keys(queries).forEach((field) => {
-            parsedURL += `&${field}=${queries[field]}`;
+            parsedURL += `${field}=${queries[field]}&`;
         });
-        return parsedURL;
+        return parsedURL.substring(0, parsedURL.length - 1);
     }
 
     protected constructPathFromPlaceholders(url: string, placeholders) {

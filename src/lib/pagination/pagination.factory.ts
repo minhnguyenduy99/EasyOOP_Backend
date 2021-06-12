@@ -24,7 +24,8 @@ export default class PaginatorFactory {
     }
 
     createLimiter(options: ResultLimiterConstruct): IResultLimiter {
-        return new ResultLimiter(options);
+        const mergeOptions = this.getMergedLimiterConfig(options);
+        return new ResultLimiter(mergeOptions);
     }
 
     protected getMergedPaginatorConfig(options: PaginationConstruct) {
@@ -41,5 +42,21 @@ export default class PaginatorFactory {
             ...options,
             pageURL: newURL,
         } as PaginationConstruct;
+    }
+
+    protected getMergedLimiterConfig(options: ResultLimiterConstruct) {
+        if (!this.config) {
+            return options;
+        }
+        const url = options.requestURL;
+        const containDomainIndex = url.search(/(http(s)*:\/\/)*\w+(:[0-9]+)*/);
+        if (containDomainIndex === 0) {
+            return options;
+        }
+        const newURL = this.config.baseURL + url;
+        return {
+            ...options,
+            requestURL: newURL,
+        } as ResultLimiterConstruct;
     }
 }

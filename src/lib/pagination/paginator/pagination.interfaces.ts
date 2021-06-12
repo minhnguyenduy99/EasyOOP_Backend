@@ -35,7 +35,7 @@ export interface PaginateOptions {
      * }
      */
     placeholders?: {
-        [key: string]: string;
+        [key: string]: any;
     };
 
     additionQuery?: {
@@ -47,6 +47,7 @@ export interface PaginationConstruct {
     pageURL: string;
     pageSize?: number;
     pageQueryParam?: string;
+    pageParamType?: "param" | "query";
 }
 
 export interface PaginationResult<T> {
