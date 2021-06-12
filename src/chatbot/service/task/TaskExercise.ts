@@ -277,11 +277,11 @@ export class TaskExercise implements ITask {
         if (checkEnd)
             return this._onSubmit(psid);
         let test = await this.testSessionService.getTestSessionById(session.sessionId)
-        let numAnswer = test.userAnswers.filter(e => e.userAnswer > 0).length
+        let numAnswer = test.userAnswers.filter(e => e.userAnswer >= 0).length
 
         return new QuickRepliesMessenger({
             text: [
-                Lang.get(Lang.txt_ExerciseTimeLeft, SessionTimer.parseMs(test.expired)),
+                Lang.get(Lang.txt_ExerciseTimeLeft, SessionTimer.parse(test.expired)),
                 Lang.get(Lang.txt_ExerciseCompleteQuestion, numAnswer, total),
                 Lang.get(Lang.txt_ExerciseSubmitComfirm),
             ],
@@ -312,21 +312,24 @@ export class TaskExercise implements ITask {
         delete this.__cacheSession[psid]
 
         let { data: { testResult, sessionURL } } = await this.testSessionService.finishTest(session.sessionId)
-        return new SimpleText({
-            text: [
-                session.title,
-                "",
-                Lang.get(Lang.txt_ExerciseResultQuestion, testResult.correct_answer_count, testResult.total_sentence_count),
-                Lang.get(Lang.txt_ExerciseResultScore, testResult.obtained_score, testResult.total_score),
-                Lang.get(Lang.txt_ExerciseResultViewInWeb, ": " + sessionURL)
-            ]
-        })
+        let numAnswer = testResult.results.filter(e => e.user_answer && e.user_answer.userAnswer >= 0).length
 
-        // TODO: why messenger don't allow url button?!
+        // return new SimpleText({
+        //     text: [
+        //         session.title,
+        //         "",
+        //         Lang.get(Lang.txt_ExerciseCompleteQuestion, numAnswer, testResult.total_sentence_count),
+        //         Lang.get(Lang.txt_ExerciseResultQuestion, testResult.correct_answer_count, testResult.total_sentence_count),
+        //         Lang.get(Lang.txt_ExerciseResultScore, testResult.obtained_score, testResult.total_score),
+        //         Lang.get(Lang.txt_ExerciseResultViewInWeb, ": " + sessionURL)
+        //     ]
+        // })
+
         return new GenericMessenger([
             {
                 title: session.title,
                 subtitle: [
+                    Lang.get(Lang.txt_ExerciseCompleteQuestion, numAnswer, testResult.total_sentence_count),
                     Lang.get(Lang.txt_ExerciseResultQuestion, testResult.correct_answer_count, testResult.total_sentence_count),
                     Lang.get(Lang.txt_ExerciseResultScore, testResult.obtained_score, testResult.total_score),
                 ],
