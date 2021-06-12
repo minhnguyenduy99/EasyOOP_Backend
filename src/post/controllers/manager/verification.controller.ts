@@ -39,7 +39,7 @@ import { PaginatedVerificationDTO } from "./dtos";
     entity: "ManagerPostVerification",
 })
 export class PostVerificationController {
-    protected readonly DEFAULT_PAGE_SIZE = 10;
+    protected readonly DEFAULT_PAGE_SIZE = 6;
     protected paginator: IPaginator;
 
     constructor(
@@ -47,8 +47,9 @@ export class PostVerificationController {
         paginatorFactory: PaginatorFactory,
     ) {
         this.paginator = paginatorFactory.createPaginator({
-            pageURL: "http://localhost:3000/manage",
+            pageURL: "/manage",
             pageSize: this.DEFAULT_PAGE_SIZE,
+            pageParamType: "param",
         });
     }
 
@@ -110,10 +111,13 @@ export class PostVerificationController {
         search = {
             ...search,
             status: VERIFICATION_STATUS.PENDING,
-            limit: (page - 1) * this.DEFAULT_PAGE_SIZE,
+        };
+        const limitOptions = {
+            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
+            limit: this.DEFAULT_PAGE_SIZE,
         };
         const [{ count, results }, groupResult] = await Promise.all([
-            this.postVerification.findVerifications(search),
+            this.postVerification.findVerifications(search, null, limitOptions),
             group
                 ? this.postVerification.getSumVerificationGroupByManager(
                       manager.role_id,
@@ -138,14 +142,18 @@ export class PostVerificationController {
         @Query("group", ParseBoolPipe) group = false,
         @AuthUserDecorator() manager: RoleUserData,
     ) {
-        search = {
-            ...search,
-            limit: (page - 1) * this.DEFAULT_PAGE_SIZE,
+        const limitOptions = {
+            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
+            limit: this.DEFAULT_PAGE_SIZE,
         };
         const [{ count, results }, groupResult] = await Promise.all([
-            this.postVerification.findVerifications(search, {
-                managerId: manager.role_id,
-            }),
+            this.postVerification.findVerifications(
+                search,
+                {
+                    managerId: manager.role_id,
+                },
+                limitOptions,
+            ),
             group
                 ? this.postVerification.getSumVerificationGroupByManager(
                       manager.role_id,

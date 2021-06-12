@@ -40,12 +40,4 @@ export class SearchVerificationDTO {
     @IsIn(Object.values(VERIFICATION_STATUS).concat(null))
     @IsOptional()
     status?: number;
-
-    @Transform(({ value }) => (value ? parseInt(value) : 10))
-    @IsNumber({
-        allowNaN: false,
-        allowInfinity: false,
-    })
-    @IsOptional()
-    limit?: number;
 }

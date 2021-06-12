@@ -19,12 +19,15 @@ import {
     ResponseSerializerInterceptor,
     Serialize,
 } from "src/lib/helpers";
-import { IResultLimiter, PaginatorFactory } from "src/lib/pagination";
-import { CommonResponse } from "src/lib/types";
-import { MockAuthor, MockManager } from "src/post/decorators/mock.decorator";
-import { POST_STATUSES } from "src/post/modules/core";
 import {
-    LimitedPostVerificationDTO,
+    IPaginator,
+    IResultLimiter,
+    PaginatorFactory,
+    ParsePagePipe,
+} from "src/lib/pagination";
+import { CommonResponse } from "src/lib/types";
+import { PaginatedVerificationDTO } from "src/post/dtos";
+import {
     PostVerificationDTO,
     PostVerificationService,
     SearchVerificationDTO,
@@ -39,14 +42,25 @@ import { BatchDeleteVerificationDTO, UpdateVerificationDTO } from "./dtos";
 export class CreatorVerificationController {
     protected readonly DEFAULT_PAGE_SIZE = 6;
     protected verificationLimiter: IResultLimiter;
+    protected paginator: IPaginator;
 
     constructor(
         private postVerification: PostVerificationService,
         paginatorFactory: PaginatorFactory,
     ) {
-        this.verificationLimiter = paginatorFactory.createLimiter({
-            requestURL: "localhost:3000/creator/verifications/pending/search",
+        this.paginator = paginatorFactory.createPaginator({
+            pageURL: "/search/{page}",
+            pageSize: this.DEFAULT_PAGE_SIZE,
+            pageParamType: "param",
         });
+    }
+
+    @Get("/summary")
+    async getVerificationGroupInfo(@AuthUserDecorator() creator: RoleUserData) {
+        const result = await this.postVerification.getSumVerificationGroupByCreator(
+            creator.role_id,
+        );
+        return result;
     }
 
     @Delete("/cancel/:id")
@@ -95,48 +109,58 @@ export class CreatorVerificationController {
         };
     }
 
-    @Get("/search")
-    @Serialize(LimitedPostVerificationDTO)
+    @Get("/search/:page")
+    @Serialize(PaginatedVerificationDTO)
     async getPendingVerifications(
+        @Param("page", ParsePagePipe) page: number,
         @Query(QueryValidationPipe) query: SearchVerificationDTO,
         @Query("group", ParseBoolPipe) group = false,
         @AuthUserDecorator() creator: RoleUserData,
     ) {
         const status = query.status;
+        const limitOptions = {
+            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
+            limit: this.DEFAULT_PAGE_SIZE,
+        };
         let active = status === VERIFICATION_STATUS.PENDING ? false : true;
         const [{ count, results }, groupResult] = await Promise.all([
-            this.postVerification.findVerifications(query, {
-                authorId: creator.role_id,
-                groups: [
-                    {
-                        type: "post",
-                        options: {
-                            metadata: true,
-                            topic: true,
-                            tag: true,
-                            active,
-                            verificationStatus: status,
+            this.postVerification.findVerifications(
+                query,
+                {
+                    authorId: creator.role_id,
+                    groups: [
+                        {
+                            type: "post",
+                            options: {
+                                metadata: true,
+                                topic: true,
+                                tag: true,
+                                active,
+                                verificationStatus: status,
+                            },
                         },
-                    },
-                    {
-                        type: "manager",
-                    },
-                ],
-            }),
+                        {
+                            type: "manager",
+                        },
+                    ],
+                },
+                limitOptions,
+            ),
             group
                 ? this.postVerification.getSumVerificationGroupByCreator(
                       creator.role_id,
                   )
                 : Promise.resolve(true),
         ]);
-        const limiter = (await this.verificationLimiter.limit(results, count, {
-            start: query.limit,
-        })) as LimitedPostVerificationDTO;
+        const paginatedResult = (await this.paginator.paginate(results, count, {
+            page,
+            additionQuery: query,
+        })) as PaginatedVerificationDTO;
         if (!group) {
-            return limiter;
+            return paginatedResult;
         }
-        limiter.groups = groupResult;
-        return limiter;
+        paginatedResult.groups = groupResult;
+        return paginatedResult;
     }
 
     @Get("/:id")

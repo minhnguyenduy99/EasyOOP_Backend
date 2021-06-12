@@ -3,6 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { EventEmitter2 } from "eventemitter2";
 import { Model } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
+import { LimitOptions } from "src/post/dtos";
 import { POST_ERRORS } from "src/post/helpers";
 import { CommitActionResult, ERRORS, PostMetadata } from "../../core";
 import { VERIFICATION_STATUS, VERIFICATION_TYPES } from "../consts";
@@ -27,6 +28,7 @@ export interface IPostVerificationService {
     findVerifications(
         input: SearchVerificationDTO,
         queryOptions?: QueryOptions,
+        limitOptions?: LimitOptions,
     ): Promise<any>;
     verify(
         id: string,
@@ -81,7 +83,6 @@ export class PostVerificationService implements IPostVerificationService {
     }
 
     async getSumVerificationGroupByCreator(creatorId: string) {
-        console.log(creatorId);
         const builder = new AggregateBuilder();
         builder.match({
             author_id: creatorId,
@@ -296,15 +297,10 @@ export class PostVerificationService implements IPostVerificationService {
     async findVerifications(
         input: SearchVerificationDTO,
         queryOptions?: QueryOptions,
+        limitOptions?: LimitOptions,
     ): Promise<any> {
-        const {
-            type,
-            limit,
-            sortBy: sortField,
-            sortOrder,
-            status,
-            search,
-        } = input;
+        const { type, sortBy: sortField, sortOrder, status, search } = input;
+        const { start, limit } = limitOptions;
         const { managerId = null, authorId = null, groups = [] } =
             queryOptions ?? {};
         const builder = new AggregateBuilder();
@@ -312,7 +308,10 @@ export class PostVerificationService implements IPostVerificationService {
             .filter(builder, { authorId, managerId, type, status, search })
             .sort(builder, { sortField, sortOrder })
             .group(builder, groups)
-            .limit(builder, { start: Math.floor(limit / 10), limit: 10 });
+            .limit(builder, {
+                start,
+                limit,
+            });
         const queryResult = await this.verificationModel
             .aggregate(builder.log(null).build())
             .exec();

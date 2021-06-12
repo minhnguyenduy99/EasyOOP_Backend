@@ -25,6 +25,7 @@ import {
     IPaginator,
     IResultLimiter,
     PaginatorFactory,
+    ParsePagePipe,
 } from "src/lib/pagination";
 import { CommonResponse } from "src/lib/types";
 import { PostFilterOptions, POST_ERRORS } from "../../helpers";
@@ -32,13 +33,13 @@ import {
     CreatePostDTO,
     GetPostsDTO,
     PaginatedPostDTO,
+    PaginatedVerificationDTO,
     PostDTO,
     SortOptions,
 } from "../../dtos";
 import { PostService } from "../../services";
-import { ERRORS, POST_STATUSES } from "src/post/modules/core";
+import { ERRORS } from "src/post/modules/core";
 import {
-    LimitedPostVerificationDTO,
     PostVerificationService,
     SearchVerificationDTO,
 } from "src/post/modules/post-verification";
@@ -46,9 +47,8 @@ import {
     VERIFICATION_STATUS,
     VERIFICATION_TYPES,
 } from "src/post/modules/post-verification/consts";
-import { MockAuthor, MockManager } from "src/post/decorators/mock.decorator";
 import { AuthorizeClass } from "src/lib/authorization";
-import { RoleUser, RoleUserData } from "src/role-management";
+import { RoleUserData } from "src/role-management";
 import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
 
 @Controller("/creator/posts")
@@ -60,7 +60,7 @@ import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
 export class CreatorPostController {
     protected readonly DEFAULT_PAGE_SIZE = 6;
     protected paginator: IPaginator;
-    protected pendingPostLimiter: IResultLimiter;
+    protected pendingPostPaginator: IPaginator;
 
     constructor(
         private postService: PostService,
@@ -68,11 +68,14 @@ export class CreatorPostController {
         paginatorFactory: PaginatorFactory,
     ) {
         this.paginator = paginatorFactory.createPaginator({
-            pageURL: "localhost:3000",
+            pageURL: "",
             pageSize: this.DEFAULT_PAGE_SIZE,
+            pageParamType: "param",
         });
-        this.pendingPostLimiter = paginatorFactory.createLimiter({
-            requestURL: "localhost:3000/creator/posts/pending/search",
+        this.pendingPostPaginator = paginatorFactory.createPaginator({
+            pageURL: "/creator/posts/pending/search",
+            pageSize: this.DEFAULT_PAGE_SIZE,
+            pageParamType: "param",
         });
     }
 
@@ -229,45 +232,60 @@ export class CreatorPostController {
         return paginatedResults;
     }
 
-    @Get("/pending/search")
-    @Serialize(LimitedPostVerificationDTO)
+    @Get("/pending/search/:page")
+    @Serialize(PaginatedVerificationDTO)
     async getPendingPosts(
+        @Param("page", ParsePagePipe) page: number,
         @Query(QueryValidationPipe) query: SearchVerificationDTO,
         @Query("group", ParseBoolPipe) group = false,
         @AuthUserDecorator() author: RoleUserData,
     ) {
         const status = query.status;
         let active = true;
+        const limitOptions = {
+            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
+            limit: this.DEFAULT_PAGE_SIZE,
+        };
         if (status !== VERIFICATION_STATUS.VERIFIED) {
             active = false;
         }
+
         const [{ count, results }, groupResult] = await Promise.all([
-            this.postVerification.findVerifications(query, {
-                authorId: author.role_id,
-                groups: [
-                    {
-                        type: "post",
-                        options: {
-                            metadata: true,
-                            topic: true,
-                            active,
+            this.postVerification.findVerifications(
+                query,
+                {
+                    authorId: author.role_id,
+                    groups: [
+                        {
+                            type: "post",
+                            options: {
+                                metadata: true,
+                                topic: true,
+                                active,
+                            },
                         },
-                    },
-                ],
-            }),
+                    ],
+                },
+                limitOptions,
+            ),
             group
                 ? this.postVerification.getSumVerificationGroupByCreator(
                       author.role_id,
                   )
                 : Promise.resolve(true),
         ]);
-        const limiter = (await this.pendingPostLimiter.limit(results, count, {
-            start: query.limit,
-        })) as LimitedPostVerificationDTO;
+        const paginatedResult = (await this.pendingPostPaginator.paginate(
+            results,
+            count,
+            {
+                page,
+                additionQuery: query,
+            },
+        )) as PaginatedVerificationDTO;
         if (!group) {
-            return limiter;
+            return paginatedResult;
         }
-        limiter.groups = groupResult;
-        return limiter;
+        paginatedResult.groups = groupResult;
+        return paginatedResult;
     }
 }
