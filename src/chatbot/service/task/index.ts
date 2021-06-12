@@ -1,4 +1,5 @@
 export { TaskID } from "./taskID"
+export { ITask } from "./ITask"
 export { TaskExercise } from "./TaskExercise"
 export { TaskLogin } from "./TaskLogin"
 export { TaskMenu } from "./TaskMenu"

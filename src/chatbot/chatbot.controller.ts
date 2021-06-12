@@ -27,8 +27,8 @@ export class ChatBotController {
     }
 
     @Get("/test/taskNLP")
-    getResults(@Query("text") text: string) {
-        this.chatbotService.handle(text).catch(err => this.Log.error(this.logTag + err, err.trace))
+    getResults(@Query("text") text: string, @Query("psid") psid: string) {
+        this.chatbotService.handle(text, psid).catch(err => this.Log.error(this.logTag + err, err.trace))
     }
 
     @Get()

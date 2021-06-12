@@ -1,14 +1,18 @@
 import { Injectable } from "@nestjs/common";
 import { QuickRepliesMessengerDTO } from "src/chatbot";
-import { QuickRepliesMessenger } from "src/chatbot/helpers";
+import { QuickRepliesMessenger, ResponseMessenger } from "src/chatbot/helpers";
 import { MenuService } from "src/menu/menu.service";
+import { ITask } from "./ITask";
 import { TaskID } from "./taskID";
 
 @Injectable()
-export class TaskMenu {
+export class TaskMenu implements ITask {
     constructor(
         protected readonly menuService: MenuService
     ) { }
+    handlerAny(content: string, ...args: any[]): Promise<ResponseMessenger> {
+        return this.handler.apply(this, args)
+    }
 
     async handler(menuID?: string) {
         const data = await this.menuService.getMenu(menuID)

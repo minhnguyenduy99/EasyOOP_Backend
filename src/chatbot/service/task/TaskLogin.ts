@@ -1,8 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { GenericMessenger } from "src/chatbot/helpers";
+import { GenericMessenger, ResponseMessenger } from "src/chatbot/helpers";
+import { ITask } from "./ITask";
 
 @Injectable()
-export class TaskLogin {
+export class TaskLogin implements ITask {
+    handlerAny(content: string, ...args: any[]): Promise<ResponseMessenger> {
+        return this.handle.apply(this, args)
+    }
     public async handle(psid: string) {
         return new GenericMessenger([
             {

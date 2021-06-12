@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ResponseMessenger } from "src/chatbot/helpers/mesenger-packer";
-import { NLPService, Label, INLPResult } from "src/lib/nlp";
+import { NLPService, Label, INLPResult, constant } from "src/lib/nlp";
+import { ITask } from "./ITask";
 import { TaskExercise } from "./TaskExercise";
 import { TaskLogin } from "./TaskLogin";
 import { TaskMenu } from "./TaskMenu";
@@ -8,18 +9,21 @@ import { TaskTopic } from "./TaskTopic";
 import { TaskWelcome } from "./TaskWelcome";
 
 @Injectable()
-export class TaskNLP {
+export class TaskNLP implements ITask {
     private readonly logTag = "[TaskNLP]"
 
     constructor(
+        protected readonly taskExercise: TaskExercise,
         protected readonly Log: Logger,
         protected readonly NLP: NLPService,
-        protected readonly taskExercise: TaskExercise,
         protected readonly taskLogin: TaskLogin,
         protected readonly taskMenu: TaskMenu,
         protected readonly taskTopic: TaskTopic,
         protected readonly taskWelcome: TaskWelcome
     ) { }
+    handlerAny(content: string, ...args: any[]): Promise<ResponseMessenger> {
+        return this.handler.apply(this, [content, ...args])
+    }
 
     public async handler(text: string, psid?: string) {
         const regular = await this.NLP.getRegular(text);
@@ -59,7 +63,10 @@ export class TaskNLP {
                 }
                 return this.taskTopic.handler(type, task.topic[0].label, task.raw)
             case Label.type.__label__exercise:
-                return this.taskExercise.searchTest(psid, task.topic[0].label);
+                if (task.topic[0].value > constant.trustThreshold)
+                    return this.taskExercise.searchTest(psid, task.topic[0].label)
+                else
+                    return this.taskExercise.askWhatTest(psid)
             default:
                 this.unhandlerTask(task)
                 return

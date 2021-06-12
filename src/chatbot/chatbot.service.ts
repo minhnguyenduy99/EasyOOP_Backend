@@ -14,8 +14,8 @@ export class ChatbotService {
         protected readonly receiveMessageService: ReceiveMessageService,
     ) { }
 
-    public async handle(text: string) {
-        this.Log.debug({ t: await this.receiveMessageService.handler(text) }, `${this.logTag}`)
+    public async handle(text: string, psid: string) {
+        this.Log.debug({ t: await this.receiveMessageService.handler(text, psid) }, `${this.logTag}`)
     }
 
     public async handleRaw(webhook_event) {

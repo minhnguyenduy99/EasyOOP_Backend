@@ -1,15 +1,17 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { AttachmentElement, QuickRepliesMessengerDTO } from "src/chatbot";
-import { GenericMessenger, QuickRepliesMessenger, SimpleText } from "src/chatbot/helpers";
+import { GenericMessenger, QuickRepliesMessenger, ResponseMessenger, SimpleText } from "src/chatbot/helpers";
 import { TestExaminationService, TestSessionService } from "src/test-examination/core";
 import { TestSession } from "src/test-examination/core/services/test-session-service/interfaces";
 import { SessionTimer } from "src/test-examination/core/services/test-session-service/timer";
+import { TaskCacheService } from "../service.task-cache";
+import { ITask } from "./ITask";
 import { default as Lang } from "./Lang"
 import { TaskID } from "./taskID";
 import { TaskLogin } from "./TaskLogin";
 
 @Injectable()
-export class TaskExercise {
+export class TaskExercise implements ITask {
     private readonly logTag = "[TaskExercise]"
     private readonly pageNum = 5
     private static readonly markChoise = ["🔴", "🔵", "🟡", "🟢", "🟤", "🟣", "🟠", "⚪", "⚫", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
@@ -21,11 +23,15 @@ export class TaskExercise {
         private readonly Log: Logger,
         private readonly taskLogin: TaskLogin,
         private readonly testExaminationService: TestExaminationService,
-        private readonly testSessionService: TestSessionService
+        private readonly testSessionService: TestSessionService,
+        private readonly taskCacheService: TaskCacheService
     ) { }
 
+    handlerAny(content: string, ...args: any[]): Promise<ResponseMessenger> {
+        return this.searchTest.apply(this, [...args, content])
+    }
+
     public async searchTest(psid: string, topic: string) {
-        topic = "test" // TODO: string user input
         let isLogin = true // TODO: check if user is login
         if (!isLogin)
             return this.taskLogin.handle(psid)
@@ -34,6 +40,9 @@ export class TaskExercise {
                 title: topic,
                 verifying_status: 1
             }, {}) // TODO: remove
+
+            if (res.count == 0)
+                return new SimpleText({ text: Lang.get(Lang.txt_exerciseNotFound) })
 
             let data = [] as AttachmentElement[]
             res.results.forEach(e => {
@@ -73,6 +82,11 @@ export class TaskExercise {
         }
     }
 
+    public async askWhatTest(psid: string) {
+        this.taskCacheService.setNextTask(this, psid, psid)
+        return new SimpleText({ text: Lang.get(Lang.txt_ExerciseSearchText) })
+    }
+
     private async _getTestSession(psid: string) {
         return this.__cacheSession[psid]
     }
@@ -101,6 +115,7 @@ export class TaskExercise {
                 Lang.get(Lang.txt_ExerciseHelp7),
                 Lang.get(Lang.txt_ExerciseHelp8, TaskExercise.markSkip),
                 Lang.get(Lang.txt_ExerciseHelp9, TaskExercise.markBackToChoise),
+                Lang.get(Lang.txt_ExerciseHelp10, Lang.txt_ExerciseReady),
             ],
             buttons: [
                 {
@@ -111,10 +126,10 @@ export class TaskExercise {
                     }
                 }
             ]
-        }, this._startTest.bind(this), psid, test_id, limited_time, num)
+        })
     }
     public async testHelp(...args) {
-        this._testHelp.apply(this, args)
+        return this._testHelp.apply(this, args)
     }
     private async _startTest(psid: string, test_id: string, limited_time: number, num: number) {
         if (await this._getTestSession(psid))
@@ -136,10 +151,14 @@ export class TaskExercise {
     }
 
     private async _onChoosePage(psid: string, test_id: string, page: number, total: number) {
+        let session = this.__cacheSession[psid] as TestSession
+        let checkEnd = await this.checkEndTest(session, psid)
+        if (checkEnd)
+            return checkEnd
+
         let start = this.pageNum * page
         let end = Math.min(this.pageNum * (page + 1), total)
 
-        let session = this.__cacheSession[psid] as TestSession
         let { data: { test: { sentences } } } = await this.testSessionService.getTestSentenceInBulk(session.sessionId, {
             start: start,
             limit: end - start
@@ -151,7 +170,7 @@ export class TaskExercise {
         } as QuickRepliesMessengerDTO
         if (page > 0)
             msg.buttons.push({
-                title: Lang.get(Lang.txt_ExerciseNext),
+                title: Lang.get(Lang.txt_ExercisePrevious),
                 payload: {
                     tid: TaskID.ExerciseChoosePage,
                     args: [psid, test_id, page - 1, total]
@@ -159,7 +178,7 @@ export class TaskExercise {
             })
         for (let i = start; i < end; i++)
             msg.buttons.push({
-                title: Lang.get(Lang.txt_ExerciseQuestion, i + 1) + sentences[i - start].user_answer >= 0 ? TaskExercise.check : "",
+                title: Lang.get(Lang.txt_ExerciseQuestion, i + 1) + (sentences[i - start].user_answer >= 0 ? TaskExercise.check : ""),
                 payload: {
                     tid: TaskID.ExerciseChooseQuestion,
                     args: [psid, test_id, i, total],
@@ -167,7 +186,7 @@ export class TaskExercise {
             })
         if (end < total)
             msg.buttons.push({
-                title: Lang.get(Lang.txt_ExercisePrevious),
+                title: Lang.get(Lang.txt_ExerciseNext),
                 payload: {
                     tid: TaskID.ExerciseChoosePage,
                     args: [psid, test_id, page + 1, total]
@@ -187,9 +206,12 @@ export class TaskExercise {
     }
 
     private async _onChooseQuestion(psid: string, test_id: string, questionIndex: number, total: number) {
-        if (questionIndex > total)
+        if (questionIndex >= total)
             return this._onChoosePage(psid, test_id, ~~(total / this.pageNum), total)
         let session = this.__cacheSession[psid] as TestSession
+        let checkEnd = await this.checkEndTest(session, psid)
+        if (checkEnd)
+            return checkEnd
         let { data: { sentence: { question, options, }, userAnswer, expiredIn } } = await this.testSessionService.getTestSentenceByIndex(session.sessionId, questionIndex)
 
         let fistSignal = Lang.get(Lang.txt_ExerciseQuestion, questionIndex + 1)
@@ -238,6 +260,10 @@ export class TaskExercise {
 
     private async _onChooseAnswer(psid: string, test_id: string, questionIndex: number, answer: number, total: number) {
         let session = this.__cacheSession[psid] as TestSession
+        let checkEnd = await this.checkEndTest(session, psid)
+        if (checkEnd)
+            return checkEnd
+
         await this.testSessionService.updateSentenceResultByIndex(session.sessionId, questionIndex, answer)
         return this._onChooseQuestion(psid, test_id, questionIndex + 1, total)
     }
@@ -247,6 +273,9 @@ export class TaskExercise {
 
     private async _onVerifySubmit(psid: string, test_id: string, page: number, total: number) {
         let session = this.__cacheSession[psid] as TestSession
+        let checkEnd = await this.checkEndTest(session, psid)
+        if (checkEnd)
+            return this._onSubmit(psid);
         let test = await this.testSessionService.getTestSessionById(session.sessionId)
         let numAnswer = test.userAnswers.filter(e => e.userAnswer > 0).length
 
@@ -283,7 +312,17 @@ export class TaskExercise {
         delete this.__cacheSession[psid]
 
         let { data: { testResult, sessionURL } } = await this.testSessionService.finishTest(session.sessionId)
+        return new SimpleText({
+            text: [
+                session.title,
+                "",
+                Lang.get(Lang.txt_ExerciseResultQuestion, testResult.correct_answer_count, testResult.total_sentence_count),
+                Lang.get(Lang.txt_ExerciseResultScore, testResult.obtained_score, testResult.total_score),
+                Lang.get(Lang.txt_ExerciseResultViewInWeb, ": " + sessionURL)
+            ]
+        })
 
+        // TODO: why messenger don't allow url button?!
         return new GenericMessenger([
             {
                 title: session.title,
@@ -293,7 +332,7 @@ export class TaskExercise {
                 ],
                 buttons: [
                     {
-                        title: Lang.get(Lang.txt_ExerciseResultViewInWeb),
+                        title: Lang.get(Lang.txt_ExerciseResultViewInWeb, ""),
                         url: sessionURL
                     }
                 ]
@@ -302,5 +341,11 @@ export class TaskExercise {
     }
     public async onSubmit(...args) {
         return this._onSubmit.apply(this, args)
+    }
+
+    private async checkEndTest(session: TestSession, psid: string) {
+        if (session.expired - Date.now() < 0)
+            return new SimpleText({ text: Lang.get(Lang.txt_ExerciseForceEnd) }, this._onSubmit.bind(this), psid)
+        return false;
     }
 }
