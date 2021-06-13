@@ -43,9 +43,14 @@ export class TestResultService {
         if (!this.isTestable(test)) {
             return ERRORS.TestNotFound;
         }
-        const result = await this.getObtainedScore(dto.results, test);
+        const { results, ...testResultInfo } = dto;
+        const result = await this.getObtainedScore(results, test);
         let input = {
-            ...dto,
+            results: results.map((sentence, index) => ({
+                ...sentence,
+                answer: test.sentences[index].answer,
+            })),
+            ...testResultInfo,
             ...result,
         };
         try {
@@ -76,7 +81,8 @@ export class TestResultService {
         resultId: string,
         options?: DetailedTestResultQueryOptions,
     ) {
-        const aggregates = this.serviceHelper.filterByResultId(resultId)
+        const aggregates = this.serviceHelper
+            .filterByResultId(resultId)
             .groupWithTest()
             .build();
 

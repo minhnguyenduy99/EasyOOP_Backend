@@ -198,7 +198,9 @@ export class TestSessionService implements ITestSession {
         sessionId: string,
         sentenceId: string,
         answer: number,
-    ): Promise<ServiceResult<{ expiredIn: SessionTimer }>> {
+    ): Promise<
+        ServiceResult<{ expiredIn: SessionTimer; session: TestSession }>
+    > {
         const testSession = (await this.cacheManager.get(
             sessionId,
         )) as TestSession;
@@ -219,10 +221,11 @@ export class TestSessionService implements ITestSession {
             testSession.countAnswer++;
         }
         sentence.userAnswer = answer;
-        await this.updateSession(sessionId, testSession);
+        const newSession = await this.updateSession(sessionId, testSession);
         return {
             code: 0,
             data: {
+                session: newSession,
                 expiredIn: testSession.expired
                     ? new SessionTimer(testSession.expired - Date.now())
                     : null,
@@ -234,7 +237,9 @@ export class TestSessionService implements ITestSession {
         sessionId: string,
         index: number,
         answer: number,
-    ): Promise<ServiceResult<{ expiredIn: SessionTimer }>> {
+    ): Promise<
+        ServiceResult<{ expiredIn: SessionTimer; session: TestSession }>
+    > {
         const testSession = (await this.cacheManager.get(
             sessionId,
         )) as TestSession;
@@ -253,10 +258,11 @@ export class TestSessionService implements ITestSession {
             testSession.countAnswer++;
         }
         testSession.userAnswers[index].userAnswer = answer;
-        await this.updateSession(sessionId, testSession);
+        const session = await this.updateSession(sessionId, testSession);
         return {
             code: 0,
             data: {
+                session,
                 expiredIn: testSession.expired
                     ? new SessionTimer(testSession.expired - Date.now())
                     : null,
@@ -302,11 +308,11 @@ export class TestSessionService implements ITestSession {
         testSession: TestSession,
     ): Promise<ServiceResult<TestResult>> {
         const { testId, userAnswers } = testSession;
-        const results = Object.keys(userAnswers).map(
-            (sentenceId) =>
+        const results = userAnswers.map(
+            (sentence) =>
                 ({
-                    sentence_id: sentenceId,
-                    user_answer: userAnswers[sentenceId],
+                    sentence_id: sentence.sentenceId,
+                    user_answer: sentence.userAnswer,
                 } as SentenceResultDTO),
         );
         try {
@@ -355,9 +361,10 @@ export class TestSessionService implements ITestSession {
     }
 
     protected async updateSession(sessionId: string, session: TestSession) {
-        await this.cacheManager.set(sessionId, session, {
+        const result = await this.cacheManager.set(sessionId, session, {
             ttl: this.DEFAULT_EXPIRED_TIME,
         });
+        return result;
     }
 
     protected isTestExpired(testSession: TestSession) {

@@ -5,6 +5,7 @@ import {
     CreateSentenceDTO,
     CreateTestExaminationDTO,
     SearchTestDTO,
+    TestExaminationDTO,
     UpdateSentenceDTO,
     UpdateTestExaminationDTO,
 } from "../dtos";
@@ -134,7 +135,10 @@ export class TestExaminationService {
         return test;
     }
 
-    async searchTest(dto: SearchTestDTO, queryOptions?: TestQueryOptions) {
+    async searchTest(
+        dto: SearchTestDTO,
+        queryOptions?: TestQueryOptions,
+    ): Promise<{ count: number; results: TestExaminationDTO[] }> {
         const {
             title = null,
             creator_id = null,
@@ -144,7 +148,7 @@ export class TestExaminationService {
             verifying_status,
             type,
         } = dto;
-        const { start = 0, limit } = queryOptions;
+        const { start = 0, limit } = queryOptions ?? {};
         const aggregates = this.serviceHelper
             .filter({ title, creator_id, verifying_status, type, topic_id })
             .sort({ sort_by, sort_order })

@@ -67,6 +67,14 @@ export class TestSessionController {
         return result;
     }
 
+    @Get("/:sessionId")
+    async getTestSessionById(@Param("sessionId") sessionId: string) {
+        const session = await this.testSessionService.getTestSessionById(
+            sessionId,
+        );
+        return session;
+    }
+
     @Put("/check")
     async checkSentence(
         @Query("sessionId") sessionId: string,
