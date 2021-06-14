@@ -94,7 +94,7 @@ export class TestSessionService implements ITestSession {
             };
         }>
     > {
-        options = options ?? {};
+        options = options ?? {start: 0};
         const session = (await this.cacheManager.get(sessionId)) as TestSession;
         if (!session) {
             return ERRORS.TestSessionNotEstablished;
@@ -109,9 +109,9 @@ export class TestSessionService implements ITestSession {
         const { data } = result;
         data.test.sentences = data.test.sentences.map((sentence, index) => ({
             ...sentence,
-            user_answer: session.userAnswers[index].userAnswer,
+            user_answer: session.userAnswers[options.start + index].userAnswer,
         }));
-        return result;
+        return { code: 0, data: data }
     }
 
     async getTestSentenceById(
