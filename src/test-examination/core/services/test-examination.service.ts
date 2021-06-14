@@ -50,7 +50,10 @@ export class TestExaminationService {
     }
 
     async getTestsGroupedByTopic(): Promise<any[]> {
-        const builder = this.serviceHelper.groupByTopic().groupWithTopic();
+        const builder = this.serviceHelper
+            .filter({ verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE })
+            .groupByTopic()
+            .groupWithTopic();
         const results = await this.testModel.aggregate(builder.build()).exec();
         return results;
     }
@@ -217,6 +220,27 @@ export class TestExaminationService {
             if (!test) {
                 return ERRORS.TestNotFound;
             }
+            return {
+                code: 0,
+                data: {
+                    test_id: test.test_id,
+                },
+            };
+        } catch (err) {
+            this.logger.error(err);
+            return ERRORS.ServiceError;
+        }
+    }
+
+    async deleteTestPermanently(testId: string) {
+        try {
+            const test = await this.testModel.findOneAndDelete({
+                test_id: testId,
+            });
+            if (!test) {
+                return ERRORS.TestNotFound;
+            }
+            this.sentenceService.deleteSentencesByTestId(testId);
             return {
                 code: 0,
                 data: {

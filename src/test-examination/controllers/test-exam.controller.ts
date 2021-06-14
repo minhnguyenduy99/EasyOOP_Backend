@@ -152,12 +152,20 @@ export class TestExaminationController {
 
     @Delete("/:testId")
     @Serialize(CommonResponse(TestExaminationDTO))
-    async deleteTest(@Param("testId") testId: string) {
-        const testResult = await this.testService.deleteTest(testId);
-        if (testResult.error) {
-            throw new BadRequestException(testResult);
+    async deleteTest(
+        @Param("testId") testId: string,
+        @Query("permanently", ParseBoolPipe) permanently = false,
+    ) {
+        let result;
+        if (permanently) {
+            result = await this.testService.deleteTestPermanently(testId);
+        } else {
+            result = await this.testService.deleteTest(testId);
         }
-        return testResult;
+        if (result.error) {
+            throw new BadRequestException(result);
+        }
+        return result;
     }
 
     @Get("/:testId/total-score")
