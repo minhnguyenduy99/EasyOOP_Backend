@@ -1,5 +1,4 @@
-import { readFileSync } from "fs";
-import { Module } from "@nestjs/common";
+import { Module, OnApplicationBootstrap } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { MongooseModule } from "@nestjs/mongoose";
@@ -14,17 +13,18 @@ import { MongoIdGeneratorModule } from "./lib/database/mongo";
 import { PostModule } from "./post";
 import { Q8AModule } from "./q8a";
 import { MenuModule } from "./menu";
-import { AuthFacebookModule } from "./lib/authentication/facebook";
-import { GoogleModule } from "./lib/authentication/google";
-import { AuthorizationModule } from "./lib/authorization";
-import { RoleManagementModule } from "./role-management";
-import { AuthenticationModule } from "./lib/authentication";
+import { AuthorizationModule, AuthorizationService } from "./lib/authorization";
+import {
+    RoleAuthenticationService,
+    RoleManagementModule,
+} from "./role-management";
+import { AuthenticationModule, RootAuthService } from "./lib/authentication";
 import { PaginationModule } from "./lib/pagination";
 import { TestExaminationModule } from "./test-examination";
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: ".development.test.env",
+            envFilePath: ".development.env",
             load: [AppConfig],
         }),
         AppConfigModule.forRoot({
@@ -71,4 +71,24 @@ import { TestExaminationModule } from "./test-examination";
     controllers: [AppController],
     providers: [AppService, AppConfigService],
 })
-export class AppModule {}
+export class AppModule implements OnApplicationBootstrap {
+    constructor(
+        private authorizeService: AuthorizationService,
+        private rootUserService: RootAuthService,
+        private configService: ConfigService,
+    ) {}
+
+    async onApplicationBootstrap() {
+        const adminUser = this.configService.get(
+            APP_CONFIG_KEY.APP_ADMIN_CONFIG,
+        );
+        await Promise.all([
+            this.rootUserService.createRootUser(adminUser),
+            this.authorizeService.createPrincipal({
+                principal_id: adminUser.role_id,
+                role_name: "admin",
+                self_added: true,
+            }),
+        ]);
+    }
+}

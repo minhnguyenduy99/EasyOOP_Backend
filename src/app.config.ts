@@ -9,6 +9,7 @@ export const APP_CONFIG_KEY = {
     FIREBASE_CONFIG_FILE: "FIREBASE_FILENAME",
     CLOUDINARY_URL: "CLOUDINARY_URL",
     CLOUDINARY_CONFIG: "CLOUDINARY.CONFIG",
+    APP_ADMIN_CONFIG: "APP_ADMIN_CONFIG",
 };
 
 // Get the value from environment and set it to a variable
@@ -25,5 +26,10 @@ export const AppConfig = () => ({
         api_key: process.env.CLOUDINARY_API_KEY,
         api_secret: process.env.CLOUDINARY_API_SECRET,
         rootFolder: process.env.CLOUDINARY_ROOT_FOLDER,
+    },
+    [APP_CONFIG_KEY.APP_ADMIN_CONFIG]: {
+        username: process.env.APP_ADMIN_USERNAME,
+        password: process.env.APP_ADMIN_PASSWORD,
+        role_id: process.env.APP_ADMIN_ROLE_ID,
     },
 });
