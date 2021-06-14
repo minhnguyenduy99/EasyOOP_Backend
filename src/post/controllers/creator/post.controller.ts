@@ -12,6 +12,7 @@ import {
     Post,
     Put,
     Query,
+    UseGuards,
     UseInterceptors,
 } from "@nestjs/common";
 import {
@@ -48,11 +49,12 @@ import {
     VERIFICATION_TYPES,
 } from "src/post/modules/post-verification/consts";
 import { AuthorizeClass } from "src/lib/authorization";
-import { RoleUserData } from "src/role-management";
+import { RoleAuthorizationGuard, RoleUserData } from "src/role-management";
 import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
 
 @Controller("/creator/posts")
 @UseInterceptors(ResponseSerializerInterceptor)
+@UseGuards(RoleAuthorizationGuard)
 @TokenAuth()
 @AuthorizeClass({
     entity: "CreatorPost",

@@ -21,8 +21,8 @@ import { PostService } from "src/post/services";
 import { RoleAuthorizationGuard } from "src/role-management";
 
 @Controller("/manage/posts")
-@TokenAuth()
 @UseGuards(RoleAuthorizationGuard)
+@TokenAuth()
 @AuthorizeClass({
     entity: "ManagerPost",
 })

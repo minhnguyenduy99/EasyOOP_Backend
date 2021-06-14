@@ -8,6 +8,7 @@ import {
     ParseIntPipe,
     Put,
     Query,
+    UseGuards,
     UseInterceptors,
 } from "@nestjs/common";
 import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
@@ -29,11 +30,12 @@ import {
     PostVerificationDTO,
     SearchVerificationDTO,
 } from "src/post/modules/post-verification/dtos";
-import { RoleUserData } from "src/role-management";
+import { RoleAuthorizationGuard, RoleUserData } from "src/role-management";
 import { PaginatedVerificationDTO } from "./dtos";
 
 @Controller("/manage/verifications")
 @UseInterceptors(ResponseSerializerInterceptor)
+@UseGuards(RoleAuthorizationGuard)
 @TokenAuth()
 @AuthorizeClass({
     entity: "ManagerPostVerification",
