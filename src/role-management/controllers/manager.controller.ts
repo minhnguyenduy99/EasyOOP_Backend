@@ -31,8 +31,8 @@ import { ManagerService, SearchRolesDTO } from "../modules/core";
 import { ERRORS } from "../errors";
 
 @Controller("/managers")
-@TokenAuth()
 @RoleAuthorization({ attachRole: false })
+@TokenAuth()
 @UseInterceptors(ResponseSerializerInterceptor)
 @AuthorizeClass({
     entity: "manager_roleManagement",
