@@ -1,4 +1,4 @@
-import { Inject, Module, OnModuleInit } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { AuthorizationModule } from "src/lib/authorization";
 import {
     CreatorController,
@@ -24,5 +24,6 @@ import { PaginationModule } from "src/lib/pagination";
         RoleAuthenticationController,
         UserController,
     ],
+    exports: [RoleAuthenticationModule],
 })
 export class RoleManagementModule {}

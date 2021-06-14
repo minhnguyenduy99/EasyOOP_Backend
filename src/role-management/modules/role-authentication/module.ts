@@ -1,46 +1,28 @@
-import { Inject, Module, OnModuleInit } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { RoleManagementCoreModule, ROLES } from "../core";
+import { Module } from "@nestjs/common";
+import { RoleManagementCoreModule } from "../core";
 import { RoleAuthenticationService } from "./service";
-import { configLoader, CONFIG_KEYS } from "./config";
-import {
-    AuthorizationModule,
-    AuthorizationService,
-} from "src/lib/authorization";
-import { CoreAuthenticationConfig } from "./interfaces";
+import { AuthorizationModule } from "src/lib/authorization";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { loader, CONFIG_KEYS } from "./config";
+
 @Module({
     imports: [
-        ConfigModule.forRoot({
-            load: [configLoader],
-        }),
         RoleManagementCoreModule,
         AuthorizationModule.forFeature({}),
+        ConfigModule.forRoot({
+            load: [loader],
+        }),
     ],
     providers: [
+        RoleAuthenticationService,
         {
-            provide: CONFIG_KEYS.MODULE_CONFIG,
+            provide: CONFIG_KEYS.ADMIN_ROLE_ID,
             useFactory: (configService: ConfigService) => {
-                return configService.get(CONFIG_KEYS.MODULE_CONFIG);
+                return configService.get(CONFIG_KEYS.ADMIN_ROLE_ID);
             },
             inject: [ConfigService],
         },
-        RoleAuthenticationService,
     ],
     exports: [RoleAuthenticationService],
 })
-export class RoleAuthenticationModule implements OnModuleInit {
-    constructor(
-        private authService: AuthorizationService,
-        @Inject(CONFIG_KEYS.MODULE_CONFIG)
-        private config: CoreAuthenticationConfig,
-    ) {}
-
-    async onModuleInit() {
-        const { rootRoleID } = this.config;
-        await this.authService.createPrincipal({
-            principal_id: rootRoleID,
-            role_name: ROLES.admin,
-            self_added: true,
-        });
-    }
-}
+export class RoleAuthenticationModule {}
