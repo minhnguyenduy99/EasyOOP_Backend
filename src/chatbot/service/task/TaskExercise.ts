@@ -264,7 +264,8 @@ export class TaskExercise implements ITask {
         if (checkEnd)
             return checkEnd
 
-        await this.testSessionService.updateSentenceResultByIndex(session.sessionId, questionIndex, answer)
+        let ret = await this.testSessionService.updateSentenceResultByIndex(session.sessionId, questionIndex, answer)
+        this.__cacheSession[psid] = ret.data.session
         return this._onChooseQuestion(psid, test_id, questionIndex + 1, total)
     }
     public async onChooseAnswer(...args) {
@@ -281,7 +282,7 @@ export class TaskExercise implements ITask {
 
         return new QuickRepliesMessenger({
             text: [
-                Lang.get(Lang.txt_ExerciseTimeLeft, SessionTimer.parse(test.expired)),
+                Lang.get(Lang.txt_ExerciseTimeLeft, SessionTimer.parseMs(test.expired - Date.now())),
                 Lang.get(Lang.txt_ExerciseCompleteQuestion, numAnswer, total),
                 Lang.get(Lang.txt_ExerciseSubmitComfirm),
             ],
@@ -312,7 +313,7 @@ export class TaskExercise implements ITask {
         delete this.__cacheSession[psid]
 
         let { data: { testResult, sessionURL } } = await this.testSessionService.finishTest(session.sessionId)
-        let numAnswer = testResult.results.filter(e => e.user_answer && e.user_answer.userAnswer >= 0).length
+        let numAnswer = testResult.results.filter(e => e.user_answer >= 0).length
 
         // return new SimpleText({
         //     text: [
