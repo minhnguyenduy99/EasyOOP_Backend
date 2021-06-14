@@ -7,3 +7,10 @@ export interface IVerificationSender {
 export interface ForFeatureOptions {
     useVerification?: boolean;
 }
+
+export interface RootUserConfig {
+    username?: string;
+    password?: string;
+    email?: string;
+    role_id?: string;
+}

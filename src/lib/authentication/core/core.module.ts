@@ -6,6 +6,7 @@ import {
     AuthenticationService,
     UserVerifier,
     GlobalAuthUserService,
+    RootAuthService,
 } from "./services";
 import { EncryptModule } from "src/lib/encrypt";
 import { JwtModule } from "@nestjs/jwt";
@@ -54,6 +55,7 @@ import { CloudinaryModule } from "src/lib/cloudinary";
             inject: [ConfigService],
         },
         AuthenticationService,
+        RootAuthService,
         GlobalAuthUserService,
         UserEventsHandler,
         AccessTokenStrategy,
@@ -63,6 +65,7 @@ import { CloudinaryModule } from "src/lib/cloudinary";
         MongooseModule,
         EncryptModule,
         EventEmitterModule,
+        RootAuthService,
         AuthenticationService,
         GlobalAuthUserService,
     ],

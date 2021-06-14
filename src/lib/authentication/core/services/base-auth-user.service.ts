@@ -55,9 +55,7 @@ export abstract class BaseAuthUserService implements IAuthUserService {
         ]);
         const inputDoc = {
             ...extractedUser,
-            password_hash: extractedUser.password_required
-                ? passwordHash
-                : null,
+            password: extractedUser.password_required ? passwordHash : null,
             login_status: LOGIN_STATUSES.UNLOGINED,
             is_active: isActive,
             profile,

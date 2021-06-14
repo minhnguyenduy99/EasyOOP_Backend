@@ -23,6 +23,12 @@ export class AuthenticationModule {
         return {
             module: AuthenticationModule,
             imports: modules,
+            providers: [
+                {
+                    provide: "AUTH_MODULE_TYPE",
+                    useValue: "ROOT",
+                },
+            ],
             controllers: [AuthController, UserController],
         };
     }
