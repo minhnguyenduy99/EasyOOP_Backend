@@ -139,6 +139,10 @@ export class TopicService implements ITopicService {
         };
     }
 
+    async getAllTopics() {
+        return this.topicModel.find();
+    }
+
     async searchTopic(keyword: string, limiter?: LimitOptions) {
         const { start, limit } = limiter;
         const builder = new AggregateBuilder();

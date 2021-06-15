@@ -78,4 +78,11 @@ export class TopicController {
         const { results } = await this.topicService.searchTopic(search, limit);
         return results;
     }
+
+    @Get("/all")
+    @Serialize(TopicDTO)
+    async getAllTopics() {
+        const topics = await this.topicService.getAllTopics();
+        return topics;
+    }
 }
