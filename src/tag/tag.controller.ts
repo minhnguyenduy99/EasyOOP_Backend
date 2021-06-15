@@ -44,4 +44,11 @@ export class TagController {
         });
         return paginatedResult;
     }
+
+    @Get("/:type")
+    @Serialize(TagDTO)
+    async getAllTagsByType(@Param("type") type: string) {
+        const tags = await this.tagService.getAllTagsByType(type);
+        return tags;
+    }
 }

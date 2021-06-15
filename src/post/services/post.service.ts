@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { EventEmitter2 } from "eventemitter2";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import {
     AggregateBuilder,
     LimitOptions as MongoLimitOption,
@@ -28,7 +28,7 @@ import {
     CommitActionResult,
 } from "../modules/core";
 import { ERRORS } from "../modules/core";
-import { Tag } from "src/tag";
+import { Tag, TagService } from "src/tag";
 
 export interface IPostService {
     createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>>;
@@ -52,6 +52,7 @@ export interface IPostService {
         limit?: LimitOptions,
     ): Promise<PostWithTagDTO>;
     getPostsGroupedByTopic(): Promise<any>;
+    getLatestPostOfTopic(topicId: string): Promise<Post>;
     deletePost(postId: string): Promise<CommitActionResult<Post>>;
 }
 
@@ -262,6 +263,27 @@ export class PostService implements IPostService {
             ...topic.toObject(),
             list_posts: [firstPost].concat(nextPosts),
         };
+    }
+
+    async getLatestPostOfTopic(topicId: string): Promise<Post> {
+        const topicIdInMongo = Types.ObjectId(topicId);
+        const results = await this.postModel
+            .find(
+                {
+                    topic_id: topicIdInMongo,
+                    post_status: POST_STATUSES.ACTIVE,
+                },
+                {
+                    post_id: 1,
+                    post_title: 1,
+                    created_date: 1,
+                },
+            )
+            .sort({
+                created_date: -1,
+            })
+            .limit(1);
+        return results?.[0];
     }
 
     async getPostsGroupedByTopic(): Promise<any[]> {

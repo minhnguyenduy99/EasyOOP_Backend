@@ -39,7 +39,7 @@ import {
     SortOptions,
 } from "../../dtos";
 import { PostService } from "../../services";
-import { ERRORS } from "src/post/modules/core";
+import { ERRORS, TAG_TYPES } from "src/post/modules/core";
 import {
     PostVerificationService,
     SearchVerificationDTO,
@@ -51,6 +51,7 @@ import {
 import { AuthorizeClass } from "src/lib/authorization";
 import { RoleAuthorizationGuard, RoleUserData } from "src/role-management";
 import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
+import { TagDTO, TagService } from "src/tag";
 
 @Controller("/creator/posts")
 @UseInterceptors(ResponseSerializerInterceptor)
@@ -67,6 +68,7 @@ export class CreatorPostController {
     constructor(
         private postService: PostService,
         private postVerification: PostVerificationService,
+        private tagService: TagService,
         paginatorFactory: PaginatorFactory,
     ) {
         this.paginator = paginatorFactory.createPaginator({
@@ -232,6 +234,23 @@ export class CreatorPostController {
             additionQuery: searchOptions,
         });
         return paginatedResults;
+    }
+
+    @Get("/topics/:topicId/latest")
+    @Serialize(PostDTO)
+    async getLatestPostOfTopic(@Param("topicId") topicId: string) {
+        const post = await this.postService.getLatestPostOfTopic(topicId);
+        if (!post) {
+            return [];
+        }
+        return [post];
+    }
+
+    @Get("/tags/all")
+    @Serialize(TagDTO)
+    async getAllTagsOfPostType() {
+        const listTags = await this.tagService.getAllTagsByType(TAG_TYPES.post);
+        return listTags;
     }
 
     @Get("/pending/search/:page")

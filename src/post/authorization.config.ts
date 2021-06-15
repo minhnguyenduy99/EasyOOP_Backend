@@ -10,6 +10,8 @@ export default {
                 "deletePost",
                 "getPosts",
                 "getPendingPosts",
+                "getLatestPostOfTopic",
+                "getAllTagsOfPostType",
             ],
         },
         {

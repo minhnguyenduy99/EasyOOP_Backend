@@ -15,6 +15,7 @@ export interface ITagService {
     searchForTags(searchOptions?: TagSearchDTO): Promise<any>;
     useTags(tagIds: string[]): Promise<ServiceResult<any>>;
     getTagById(tagId: string): Promise<Tag>;
+    getAllTagsByType(type: string): Promise<Tag[]>;
 }
 
 @Injectable()
@@ -102,5 +103,12 @@ export class TagService implements ITagService {
             count,
             results,
         };
+    }
+
+    async getAllTagsByType(type: string) {
+        const result = await this.tagModel.find({
+            tag_type: type,
+        });
+        return result;
     }
 }
