@@ -10,7 +10,7 @@ export interface QuickRepliesMessengerDTO extends SimpleTextDTO { // ome time bu
     buttons: QuickRepliesButton[]
 }
 
-export interface AttachmentElement {
+export interface AttachmentElement extends ResponseMessengerDTO {
     title?: string
     subtitle?: string | string[]
     image_url?: string
@@ -19,6 +19,12 @@ export interface AttachmentElement {
         url: string
         webview_height_ratio?: "COMPACT" | "TALL" | "FULL"
     }
+}
+
+export interface MediaElement extends ResponseMessengerDTO {
+    media_type: "image" | "video"
+    url: string
+    buttons?: MessengerButton[]
 }
 
 //#region hidden

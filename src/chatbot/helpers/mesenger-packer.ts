@@ -1,4 +1,4 @@
-import { AttachmentElement, QuickRepliesMessengerDTO, ResponseMessengerDTO, SimpleTextDTO } from "../";
+import { AttachmentElement, MediaElement, QuickRepliesMessengerDTO, ResponseMessengerDTO, SimpleTextDTO } from "../";
 
 interface MessengerObject {
     recipient: {
@@ -110,16 +110,18 @@ export class QuickRepliesMessenger extends FixPayloadMessenger {
     }
 }
 
-export class GenericMessenger extends ButtonAbleMessenger {
-    constructor(protected data: AttachmentElement[], callback?: Function, ...args) {
+abstract class TemplateMessenger extends ButtonAbleMessenger {
+    constructor(protected data: ResponseMessengerDTO[], callback?: Function, ...args) {
         super(data, callback, ...args)
     }
+
+    protected abstract get attachmentType(): string
 
     public pack() {
         let ret = super.pack()
         ret.message = {
             attachment: {
-                type: "template",
+                type: this.attachmentType,
                 payload: {
                     template_type: "generic",
                     elements: []
@@ -142,5 +144,24 @@ export class GenericMessenger extends ButtonAbleMessenger {
         })
         return ret
     }
+}
 
+export class GenericMessenger extends TemplateMessenger {
+    constructor(protected data: AttachmentElement[], callback?: Function, ...args) {
+        super(data, callback, ...args)
+    }
+
+    protected get attachmentType(): string {
+        return "template"
+    }
+}
+
+export class MediaMessenger extends TemplateMessenger {
+    constructor(protected data: MediaElement[], callback?: Function, ...args) {
+        super(data, callback, ...args)
+    }
+
+    protected get attachmentType(): string {
+        return "media"
+    }
 }
