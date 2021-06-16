@@ -152,8 +152,8 @@ export class PostCoreService {
             return POST_ERRORS.ServiceError;
         }
 
-        if (dto.next_post_id === undefined) {
-            dto.next_post_id = previousPost
+        if (postDTO.next_post_id === undefined) {
+            postDTO.next_post_id = previousPost
                 ? previousPost.next_post_id // not the first post
                 : topic.first_post_id; // the first post
         }
