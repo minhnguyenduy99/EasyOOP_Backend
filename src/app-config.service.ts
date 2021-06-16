@@ -16,8 +16,8 @@ export class AppConfigService implements IAppConfig, IAppEnvironmentConfig {
     }
 
     cors() {
-        const origin = this.configService.get(APP_CONFIG_KEY.CORS);
-        return new RegExp(origin);
+        const origins = this.configService.get(APP_CONFIG_KEY.CORS).split(",");
+        return origins.map((origin) => new RegExp(origin));
     }
 
     isHTTPS() {
