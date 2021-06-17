@@ -1,5 +1,14 @@
 const o =
 {
+    txt_about: "Về bản thân tôi",
+    txt_about1: "Đây là một sản phẩm thuộc dự án giúp đỡ học OOP một cách đơn giản và trực tiếp",
+    txt_about2: "Mã nguồn:",
+    txt_about3: "Người phát triển: Nguyễn Du Lịch + Nguyễn Duy Minh",
+    txt_menu_myweb: "Website",
+    txt_menu_QnA: "Hỏi đáp nhanh",
+    txt_menu_root: "Menu chính",
+    txt_Greeting: "Hi {{user_full_name}}, this is chatbot help learn OOP\nYou can ask anything about OOP here by chat directly or choose menu bellow",
+    txt_Greeting_VN: "Xin chào {{user_full_name}}, đây là chatbot hỗ trợ học OOP\nBạn có thể hỏi bất cứ điều gì liên quan đến OOP ở đây bao gồm khái niệm, ví dụ, bài tập, ... bằng cách nhắn tin trực tiếp hoặc chọn menu bên dưới",
     txt_ExerciseOK: "Chắc chắn",
     txt_ExerciseContinue: "Làm tiếp",
     txt_ExerciseDoNow: "Làm ngay",
@@ -34,6 +43,8 @@ const o =
     txt_ExerciseSearchText: "Bạn muốn tìm bài thi gì?",
     txt_ExerciseForceEnd: "Hết giờ làm bài, đang tính toán kết quả bài làm...",
     txt_exerciseNotFound: "Không tìm thấy bài thi liên quan",
+    txt_QnA_help1: "Nhắn cho tôi một câu hỏi bất kỳ liên quan đến OOP.",
+    txt_QnA_help2: "Ví dụ: OOP là gì",
 
     get: function (stringOrTxt: string, ...args) {
         let s = this[stringOrTxt] || stringOrTxt

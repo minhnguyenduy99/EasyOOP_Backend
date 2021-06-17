@@ -5,6 +5,7 @@ import { ITask } from "./ITask";
 import { TaskExercise } from "./TaskExercise";
 import { TaskLogin } from "./TaskLogin";
 import { TaskMenu } from "./TaskMenu";
+import { TaskQnA } from "./TaskQnA";
 import { TaskTopic } from "./TaskTopic";
 import { TaskWelcome } from "./TaskWelcome";
 
@@ -19,7 +20,8 @@ export class TaskNLP implements ITask {
         protected readonly taskLogin: TaskLogin,
         protected readonly taskMenu: TaskMenu,
         protected readonly taskTopic: TaskTopic,
-        protected readonly taskWelcome: TaskWelcome
+        protected readonly taskWelcome: TaskWelcome,
+        protected readonly taskQnA: TaskQnA
     ) { }
     handlerAny(content: string, ...args: any[]): Promise<ResponseMessenger> {
         return this.handler.apply(this, [content, ...args])
@@ -34,6 +36,8 @@ export class TaskNLP implements ITask {
                 return this.taskMenu.handler()
             case Label.type.__label__welcome:
                 return this.taskWelcome.handler()
+            default:
+                this.unhandlerTask(regular)
         }
 
         const res = await this.NLP.get(text, { fixMissing: true })
@@ -55,7 +59,7 @@ export class TaskNLP implements ITask {
 
         let type = task.type[0].label
         switch (Label.type[type]) {
-            case Label.type.__label__definition:
+            case Label.type.__label__question:
             case Label.type.__label__example:
                 if (task.topic.length == 0) {
                     this.unhandlerTask(task)
@@ -73,7 +77,7 @@ export class TaskNLP implements ITask {
         }
     }
 
-    private unhandlerTask(task: INLPResult) {
+    private unhandlerTask(task: INLPResult | string) {
         this.Log.warn(task, `${this.logTag} unhandler task`)
     }
 }
