@@ -1,6 +1,9 @@
 export enum TaskID {
+    About,
+    Greeting,
     Login,
     Menu,
+    QnA,
     Test,
     TestHelp,
     ExerciseChoosePage,
