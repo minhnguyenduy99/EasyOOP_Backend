@@ -28,7 +28,6 @@ export class Post extends Document {
 
     @Prop({
         type: Number,
-        default: Date.now(),
     })
     created_date: number;
 
@@ -75,6 +74,7 @@ export const PostSchema = SchemaFactory.createForClass(Post);
 PostSchema.pre("save", function (next) {
     if (this.isNew && !this.post_id) {
         this.post_id = GenerateDigitID(10);
+        this.created_date = Date.now();
     }
     next();
 });
