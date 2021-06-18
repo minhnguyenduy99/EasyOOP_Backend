@@ -42,6 +42,7 @@ export class LoginAttachAuthInfoInterceptor implements NestInterceptor {
             maxAge: 5 * 60 * 1000,
             sameSite: "none",
             secure: true,
+            domain: process.env.COOKIE_DOMAIN,
         });
     }
 
@@ -51,6 +52,7 @@ export class LoginAttachAuthInfoInterceptor implements NestInterceptor {
             expires: expiredIn,
             sameSite: "none",
             secure: true,
+            domain: process.env.COOKIE_DOMAIN,
         });
     }
 
@@ -60,6 +62,7 @@ export class LoginAttachAuthInfoInterceptor implements NestInterceptor {
             expires: expiredIn,
             sameSite: "none",
             secure: true,
+            domain: process.env.COOKIE_DOMAIN,
         });
         return;
     }
