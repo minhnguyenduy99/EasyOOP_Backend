@@ -2,11 +2,11 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
-import { Sentence, TestTopic } from "../models";
-import { TestFilter } from "./interfaces";
+import { Sentence, TestTopic } from "../../models";
+import { TestFilter } from "../interfaces";
 
 @Injectable()
-export class ServiceHelper {
+export class TestServiceHelper {
     protected builder: AggregateBuilder;
 
     constructor(
@@ -18,12 +18,12 @@ export class ServiceHelper {
     }
 
     filter(filter: TestFilter) {
-        const { title, creator_id, verifying_status, type, topic_id } = filter;
+        const { title, creator_id, available_status, type, topic_id } = filter;
         this.builder.match({
             ...(title && { $text: { $search: title } }),
             ...(creator_id && { creator_id }),
             ...(topic_id && { topic_id }),
-            ...(verifying_status && { verifying_status }),
+            ...(available_status && { available_status }),
             ...(type && { type }),
         });
         return this;
@@ -60,27 +60,6 @@ export class ServiceHelper {
                 },
             },
         });
-        return this;
-    }
-
-    getWithTotalScore() {
-        this.builder
-            .lookup({
-                from: this.sentenceModel,
-                localField: "list_sentence_ids",
-                foreignField: "sentence_id",
-                as: "sentences",
-                mergeObject: false,
-                single: false,
-                removeFields: ["__v", "options", "question", "answer"],
-            })
-            .aggregate({
-                $addFields: {
-                    total_score: {
-                        $sum: "$sentences.score",
-                    },
-                },
-            });
         return this;
     }
 

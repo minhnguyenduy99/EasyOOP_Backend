@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
-import { Sentence, TestExamination, TestResult } from "../models";
+import { Sentence, TestExamination, TestResult } from "../../models";
 
 @Injectable()
 export class TestResultServiceHelper {

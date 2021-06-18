@@ -42,7 +42,7 @@ import {
 @UseInterceptors(ResponseSerializerInterceptor)
 export class TestResultController {
     protected readonly TEST_RESULT_LIMIT = 10;
-    protected readonly DETAIL_RESULT_LIMIT = 4;
+    protected readonly DETAIL_RESULT_LIMIT = 10;
     protected testResultPaginator: IPaginator;
     protected detailedPaginator: IPaginator;
 

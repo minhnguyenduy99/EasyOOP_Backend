@@ -31,10 +31,10 @@ export class SessionTimer {
     }
 
     public static parse(second: number) {
-        return new SessionTimer(second * 1000)
+        return new SessionTimer(second * 1000);
     }
 
     public static parseMs(milisecond: number) {
-        return new SessionTimer(milisecond)
+        return new SessionTimer(milisecond);
     }
 }

@@ -1,7 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { SentenceService } from ".";
 import {
     CreateSentenceResultDTO,
     CreateTestResultDTO,
@@ -9,14 +8,15 @@ import {
     SentenceResultDTO,
 } from "../dtos";
 import { TestExamination, Sentence, TestResult } from "../models";
-import { TestExaminationService } from "./test-examination.service";
-import { ERRORS, ServiceResult } from "../../helpers";
 import {
     DetailedTestResultQueryOptions,
     TestResultQueryOptions,
 } from "./interfaces";
-import { TestResultServiceHelper } from "./test-result-service-helper";
+import { TestResultServiceHelper } from "./helpers";
 import { GenerateDigitID } from "src/lib/helpers";
+import { SentenceService } from "./sentence.service";
+import { TestExaminationService } from "./test-examination.service";
+import { ERRORS, ServiceResult } from "src/test-examination/helpers";
 
 @Injectable()
 export class TestResultService {
@@ -37,25 +37,20 @@ export class TestResultService {
         dto: CreateTestResultDTO,
         save?: boolean,
     ): Promise<ServiceResult<TestResult>> {
-        const test = await this.testService.getTestById(dto.test_id, {
-            groupWithSentences: true,
-        });
+        const [test, sentences] = await Promise.all([
+            this.testService.getTestDetailById(dto.test_id),
+            this.sentenceService.getAllSentences(dto.test_id),
+        ]);
         if (!this.isTestable(test)) {
             return ERRORS.TestNotFound;
         }
-        const { results, ...testResultInfo } = dto;
-        const result = await this.getObtainedScore(results, test);
-        let input = {
-            results: results.map((sentence, index) => ({
-                ...sentence,
-                answer: test.sentences[index].answer,
-            })),
-            ...testResultInfo,
-            ...result,
-        };
+
+        test.sentences = sentences;
+
+        const input = this.getTestResultInput(test, dto);
+
         try {
             if (!save) {
-                input.total_sentence_count = test.list_sentence_ids.length;
                 return {
                     code: 0,
                     data: input,
@@ -66,7 +61,7 @@ export class TestResultService {
                 dto.test_id,
                 input,
             );
-            testResult.total_sentence_count = test.list_sentence_ids.length;
+            testResult.total_sentence_count = test.sentences.length;
             return {
                 code: 0,
                 data: testResult,
@@ -146,19 +141,34 @@ export class TestResultService {
         return result;
     }
 
-    protected async getObtainedScore(
+    protected getTestResultInput(
+        test: TestExamination,
+        dto: CreateTestResultDTO,
+    ) {
+        const { results, ...testResultInfo } = dto;
+        const result = this.getObtainedScore(results, test);
+        let input = {
+            results: results.map((sentence, index) => ({
+                ...sentence,
+                answer: test.sentences[index].answer,
+            })),
+            ...testResultInfo,
+            ...result,
+        };
+        input.total_sentence_count = test.sentence_count;
+        return input;
+    }
+
+    protected getObtainedScore(
         results: CreateSentenceResultDTO[],
         test?: TestExamination,
     ) {
-        const sentenceObj = results.reduce(
-            (pre, cur) => ({ ...pre, [cur.sentence_id]: cur.user_answer }),
-            {},
-        );
-        const scores = test.sentences
-            .map(({ sentence_id, answer, score }) => ({
+        const sentences = test.sentences;
+        const scores = sentences
+            .map(({ sentence_id, answer, score }, index) => ({
                 sentence_id,
                 score: score === 0 ? test.default_score_per_sentence : score,
-                correct: answer === sentenceObj[sentence_id],
+                correct: answer === results[index].user_answer,
             }))
             .reduce(accumulateScore, {
                 total_score: 0,
@@ -167,13 +177,13 @@ export class TestResultService {
             });
         return scores;
 
-        function accumulateScore(pre, cur) {
+        function accumulateScore(pre, cur, index) {
             return {
                 total_score: pre.total_score + cur.score,
                 obtained_score:
                     pre.obtained_score + (cur.correct ? cur.score : 0),
                 correct_answer_count: cur.correct
-                    ? ++pre.correct_answer_count
+                    ? pre.correct_answer_count + 1
                     : pre.correct_answer_count,
             };
         }

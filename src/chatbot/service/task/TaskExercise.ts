@@ -1,12 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { AttachmentElement, QuickRepliesMessengerDTO } from "src/chatbot";
 import { GenericMessenger, QuickRepliesMessenger, ResponseMessenger, SimpleText } from "src/chatbot/helpers";
-import { TestExaminationService, TestSessionService } from "src/test-examination/core";
-import { TestSession } from "src/test-examination/core/services/test-session-service/interfaces";
-import { SessionTimer } from "src/test-examination/core/services/test-session-service/timer";
+import { SessionTimer, TestSession, TestExaminationService, TestSessionService } from "src/test-examination";
 import { TaskCacheService } from "../service.task-cache";
 import { ITask } from "./ITask";
-import { default as Lang } from "./Lang"
+import { default as Lang } from "./Lang";
 import { TaskID } from "./taskID";
 import { TaskLogin } from "./TaskLogin";
 
@@ -38,7 +36,7 @@ export class TaskExercise implements ITask {
         else {
             let res = await this.testExaminationService.searchTest({
                 title: topic,
-                verifying_status: 1
+                available_status: 1
             }, {}) // TODO: remove
 
             if (res.count == 0)

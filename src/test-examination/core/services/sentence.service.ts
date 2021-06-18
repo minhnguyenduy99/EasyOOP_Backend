@@ -3,8 +3,10 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { CreateSentenceDTO, UpdateSentenceDTO } from "../dtos";
 import { Sentence, TestExamination } from "../models";
-import { ERRORS, ServiceResult } from "../../helpers";
 import { AggregateBuilder } from "src/lib/database/mongo";
+import { SentenceQueryOptions, TestFilter } from "./interfaces";
+import { ERRORS, ServiceResult } from "src/test-examination/helpers";
+import { SentenceServiceHelper } from "./helpers";
 
 @Injectable()
 export class SentenceService {
@@ -13,16 +15,24 @@ export class SentenceService {
         private testModel: Model<TestExamination>,
         @InjectModel(Sentence.name)
         private sentenceModel: Model<Sentence>,
+        private sentenceServiceHelper: SentenceServiceHelper,
         private logger: Logger,
     ) {}
 
+    /**
+     * @deprecated
+     * @param testOrId
+     * @param sentence
+     * @returns
+     */
     async createSentence(
         testOrId: string | TestExamination,
         sentence: CreateSentenceDTO,
     ): Promise<ServiceResult<Sentence>> {
         const test = await this.getTestInstance(testOrId);
-        sentence["test_id"] = test.test_id;
-        sentence.score = sentence.score ?? test.default_score_per_sentence;
+        sentence.test_id = test.test_id;
+        sentence.score === 0 &&
+            (sentence.score = test.default_score_per_sentence);
         try {
             const createdSentence = await this.sentenceModel.create(sentence);
             return {
@@ -40,11 +50,14 @@ export class SentenceService {
         dtos: CreateSentenceDTO[],
     ): Promise<ServiceResult<{ test_id: string; sentence_ids: string[] }>> {
         const test = await this.getTestInstance(testOrId);
-        const inputs = dtos.map((dto) => {
-            dto["test_id"] = test.test_id;
-            dto.score = dto.score ?? test.default_score_per_sentence;
+        const currentCount = test.sentence_count;
+        const inputs = dtos.map((dto, index) => {
+            dto.test_id = test.test_id;
+            dto.score === 0 && (dto.score = test.default_score_per_sentence);
+            dto.order = currentCount + index + 1;
             return dto;
         }) as any[];
+
         try {
             const sentences = await this.sentenceModel.create(inputs);
             const sentenceIds = sentences.map(
@@ -67,6 +80,50 @@ export class SentenceService {
         return this.sentenceModel.findOne({
             sentence_id: sentenceId,
         });
+    }
+
+    async getSentenceByOrder(testId: string, order: number) {
+        return this.sentenceModel.findOne({
+            test_id: testId,
+            order,
+        });
+    }
+
+    async getSentenceIds(testId: string) {
+        const sentences = await this.sentenceModel.find(
+            {
+                test_id: testId,
+            },
+            {
+                sentence_id: 1,
+            },
+        );
+        return sentences.map((sentence) => sentence.sentence_id);
+    }
+
+    async getAllSentences(testId: string) {
+        const result = await this.getSentences(testId, { start: 0 });
+        return result.results;
+    }
+
+    async getSentences(
+        testId: string,
+        queryOptions?: SentenceQueryOptions,
+    ): Promise<{ count: number; results: Sentence[] }> {
+        const { start = 0, limit = 100 } = queryOptions ?? {};
+        const queryBuild = this.sentenceServiceHelper
+            .filterByTestId({ test_id: testId })
+            .limit(start, limit)
+            .build();
+
+        const [{ count, results }] = await this.sentenceModel
+            .aggregate(queryBuild)
+            .exec();
+
+        return {
+            count,
+            results,
+        };
     }
 
     async searchSentences(testId: string, sentenceIds: string[]) {
@@ -117,6 +174,11 @@ export class SentenceService {
         }
     }
 
+    /**
+     * @deprecated
+     * @param sentenceId
+     * @returns
+     */
     async deleteSentenceById(sentenceId: string): Promise<ServiceResult<any>> {
         try {
             const sentence = await this.sentenceModel.findOneAndDelete(
@@ -145,6 +207,9 @@ export class SentenceService {
         }
     }
 
+    /**
+     * @deprecated
+     */
     async deleteSentenceBulk(
         testId: string,
         sentenceIds: string[],

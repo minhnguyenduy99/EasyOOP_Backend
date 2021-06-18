@@ -57,7 +57,7 @@ export class SearchTestDTO {
     @IsOptional()
     @Transform(({ value }) => parseInt(value ?? 0))
     @IsNumber()
-    verifying_status?: number;
+    available_status?: number;
 
     @IsOptional()
     @Transform(({ value }) => value ?? null)

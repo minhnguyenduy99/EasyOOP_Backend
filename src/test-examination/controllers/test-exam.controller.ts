@@ -171,6 +171,9 @@ export class TestExaminationController {
     @Get("/:testId/total-score")
     async getTotalScoreOfTest(@Param("testId") testId: string) {
         const scoreResult = await this.testService.getTotalScore(testId);
+        if (!scoreResult) {
+            throw new NotFoundException(ERRORS.TestNotFound);
+        }
         return scoreResult;
     }
 
@@ -201,29 +204,29 @@ export class TestExaminationController {
         return result;
     }
 
-    @Delete("/:testId/sentences")
-    async removeSentences(
-        @Param("testId") testId: string,
-        @Body(BodyValidationPipe) sentenceIds: string[],
-    ) {
-        const result = await this.testService.removeSentences(
-            testId,
-            sentenceIds,
-        );
-        if (result.error) {
-            throw new BadRequestException(result);
-        }
-        return result;
-    }
+    // @Delete("/:testId/sentences")
+    // async removeSentences(
+    //     @Param("testId") testId: string,
+    //     @Body(BodyValidationPipe) sentenceIds: string[],
+    // ) {
+    //     const result = await this.testService.removeSentences(
+    //         testId,
+    //         sentenceIds,
+    //     );
+    //     if (result.error) {
+    //         throw new BadRequestException(result);
+    //     }
+    //     return result;
+    // }
 
-    @Delete("/sentences/:sentenceId")
-    async deleteSentenceById(@Param("sentenceId") sentenceId: string) {
-        const result = await this.testService.deleteSentenceById(sentenceId);
-        if (result.error) {
-            throw new BadRequestException(result);
-        }
-        return result;
-    }
+    // @Delete("/sentences/:sentenceId")
+    // async deleteSentenceById(@Param("sentenceId") sentenceId: string) {
+    //     const result = await this.testService.deleteSentenceById(sentenceId);
+    //     if (result.error) {
+    //         throw new BadRequestException(result);
+    //     }
+    //     return result;
+    // }
 
     @Get("/:testId/sentences")
     @Serialize(DetailedTestExamnimationDTO)
@@ -236,22 +239,22 @@ export class TestExaminationController {
             start: (page - 1) * this.SENTENCES_PER_TEST_LIMIT,
             limit: this.SENTENCES_PER_TEST_LIMIT,
         };
-        const [result, scoreResult] = await Promise.all([
-            this.testService.getTestWithSentences(testId, limit),
-            this.testService.getTotalScore(testId),
+        const [test, sentenceResult] = await Promise.all([
+            this.testService.getTestDetailById(testId),
+            this.sentenceService.getSentences(testId, limit),
         ]);
-        if (result.error) {
-            throw new NotFoundException(result);
+
+        if (!test) {
+            throw new NotFoundException(ERRORS.TestNotFound);
         }
-        const {
-            test: { sentences, ...test },
-            total_count,
-        } = result.data;
-        test["total_score"] = scoreResult.data?.total_score;
+
+        const { results, count } = sentenceResult;
+
+        console.log(sentenceResult);
 
         const paginatedResult = await this.sentenceResultPaginator.paginate(
-            sentences,
-            total_count,
+            results,
+            count,
             {
                 page,
                 placeholders: {

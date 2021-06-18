@@ -1,10 +1,17 @@
 import { Transform } from "class-transformer";
-import { IsArray, IsNotEmpty, IsNumber, IsOptional } from "class-validator";
+import {
+    IsArray,
+    IsEmpty,
+    IsNotEmpty,
+    IsNumber,
+    IsOptional,
+} from "class-validator";
 
 export class CreateSentenceDTO {
     @IsOptional()
     @IsNumber({
-        allowNaN: true,
+        allowNaN: false,
+        allowInfinity: false,
     })
     @Transform(({ value }) => value ?? Number.NaN)
     order: number;
@@ -22,18 +29,17 @@ export class CreateSentenceDTO {
 
     @IsNotEmpty()
     @IsNumber()
+    @Transform(({ value }) => value ?? 0)
     score: number;
 
     @IsOptional()
     image_url: string;
+
+    @IsEmpty()
+    test_id: string;
 }
 
 export class UpdateSentenceDTO {
-    @IsOptional()
-    @IsNumber()
-    @Transform(({ value }) => value ?? null)
-    order: number;
-
     @IsNotEmpty()
     question: string;
 

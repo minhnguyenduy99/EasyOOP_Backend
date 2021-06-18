@@ -12,11 +12,12 @@ import {
 } from "./models";
 import {
     SentenceService,
-    ServiceHelper,
+    TestServiceHelper,
     TestExaminationService,
     TestResultService,
     TestResultServiceHelper,
     TestSessionService,
+    SentenceServiceHelper,
 } from "./services";
 import { CONFIG_KEYS, configLoader } from "./config";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -45,7 +46,8 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
                 configService.get(CONFIG_KEYS.CONFIG),
             inject: [ConfigService],
         },
-        ServiceHelper,
+        TestServiceHelper,
+        SentenceServiceHelper,
         TestExaminationService,
         SentenceService,
         TestResultService,

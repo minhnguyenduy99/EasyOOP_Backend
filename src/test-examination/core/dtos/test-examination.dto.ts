@@ -13,7 +13,10 @@ export class TestExaminationDTO extends BaseModelSerializer {
     creator_id: string;
     limited_time?: number;
     default_score_per_sentence: number;
-    verifying_status: number;
+    available_status: number;
+    sentence_count: number;
+
+    list_sentence_ids: string[];
 
     total_score?: number;
 
@@ -22,8 +25,6 @@ export class TestExaminationDTO extends BaseModelSerializer {
 
     @Type(() => TestTopicDTO)
     topic?: TestTopicDTO;
-
-    list_sentence_ids?: string[];
 }
 
 export class DetailedTestExamnimationDTO extends PaginationSerializer(

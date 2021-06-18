@@ -24,21 +24,24 @@ import {
 import {
     SearchTestDTO,
     SentenceDTO,
+    SentenceService,
     TestExaminationDTO,
     TestExaminationService,
     TestTopicDTO,
 } from "../core";
 import { TEST_AVAILABLE_STATUSES } from "../core/consts";
+import { ERRORS } from "../helpers";
 
 @Controller("/viewer/tests")
 @UseInterceptors(ResponseSerializerInterceptor)
 export class TestExamViewerController {
     protected readonly TEST_LIMIT = 10;
-    protected readonly SENTENCES_PER_TEST_LIMIT = 4;
+    protected readonly SENTENCES_PER_TEST_LIMIT = 10;
     protected testPaginator: IPaginator;
 
     constructor(
         private testService: TestExaminationService,
+        private sentenceService: SentenceService,
         paginatorFactory: PaginatorFactory,
     ) {
         this.testPaginator = paginatorFactory.createPaginator({
@@ -60,7 +63,7 @@ export class TestExamViewerController {
 
         search = {
             ...search,
-            verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
+            available_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
         };
 
         const { count, results } = await this.testService.searchTest(
@@ -88,14 +91,9 @@ export class TestExamViewerController {
     @Get("/:testId")
     @Serialize(TestExaminationDTO)
     async getTestDetailById(@Param("testId") testId: string) {
-        const test = await this.testService.getTestById(testId, {
-            groupWithSentences: false,
-            verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
-        });
+        const test = this.testService.getTestDetailById(testId);
         if (!test) {
-            throw new NotFoundException({
-                error: "Test not found",
-            });
+            throw new NotFoundException(ERRORS.TestNotFound);
         }
         return test;
     }
@@ -109,24 +107,14 @@ export class TestExamViewerController {
         const options = {
             start: (page - 1) * this.SENTENCES_PER_TEST_LIMIT,
             limit: this.SENTENCES_PER_TEST_LIMIT,
-            verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
         };
-        const result = await this.testService.getTestWithSentences(
+        const { results, count } = await this.sentenceService.getSentences(
             testId,
             options,
         );
-        if (result.error) {
-            throw new BadRequestException(test);
-        }
-        const {
-            data: {
-                total_count,
-                test: { sentences },
-            },
-        } = result;
         const paginatedResult = await this.testPaginator.paginate(
-            sentences,
-            total_count,
+            results,
+            count,
             {
                 additionQuery: {
                     page,

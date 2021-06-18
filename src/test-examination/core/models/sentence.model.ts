@@ -14,6 +14,11 @@ export class Sentence extends Document {
     })
     test_id: string;
 
+    @Prop({
+        required: true,
+    })
+    order: number;
+
     @Prop()
     question: string;
 
@@ -50,4 +55,5 @@ SentenceSchema.pre("save", function (next) {
 
 SentenceSchema.index({
     test_id: 1,
+    order: 1,
 });

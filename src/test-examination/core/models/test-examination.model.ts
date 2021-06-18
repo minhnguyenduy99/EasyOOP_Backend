@@ -40,14 +40,14 @@ export class TestExamination extends Document {
 
     @Prop({
         required: true,
+        default: 0,
     })
-    verifying_status: number;
+    sentence_count: number;
 
     @Prop({
-        required: false,
-        default: [],
+        required: true,
     })
-    list_sentence_ids?: any[];
+    available_status: number;
 
     total_score?: number;
 
@@ -79,7 +79,7 @@ TestExamninationSchema.index({
 });
 
 TestExamninationSchema.index({
-    verifying_status: 1,
+    available_status: 1,
 });
 
 TestExamninationSchema.index({
@@ -88,8 +88,4 @@ TestExamninationSchema.index({
 
 TestExamninationSchema.index({
     created_date: -1,
-});
-
-TestExamninationSchema.index({
-    list_sentence_ids: 1,
 });

@@ -11,11 +11,10 @@ import {
 } from "../dtos";
 import { Sentence, TestExamination, TestTopic } from "../models";
 import { TEST_STATUSES, TEST_TYPES, TEST_AVAILABLE_STATUSES } from "../consts";
-import { ERRORS } from "../../helpers";
-import { ServiceResult } from "src/test-examination/helpers";
-import { SentenceService } from "./sentence.service";
-import { ServiceHelper } from "./service-helper";
+import { ERRORS, ServiceResult } from "src/test-examination/helpers";
 import { SentenceQueryOptions, TestQueryOptions } from "./interfaces";
+import { SentenceService } from "./sentence.service";
+import { SentenceServiceHelper, TestServiceHelper } from "./helpers";
 
 @Injectable()
 export class TestExaminationService {
@@ -28,7 +27,8 @@ export class TestExaminationService {
         private topicModel: Model<TestTopic>,
         private logger: Logger,
         private sentenceService: SentenceService,
-        private serviceHelper: ServiceHelper,
+        private serviceHelper: TestServiceHelper,
+        private sentenceServiceHelper: SentenceServiceHelper,
     ) {}
 
     async createTest(dto: CreateTestExaminationDTO) {
@@ -51,7 +51,7 @@ export class TestExaminationService {
 
     async getTestsGroupedByTopic(): Promise<any[]> {
         const builder = this.serviceHelper
-            .filter({ verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE })
+            .filter({ available_status: TEST_AVAILABLE_STATUSES.AVAILABLE })
             .groupByTopic()
             .groupWithTopic();
         const results = await this.testModel.aggregate(builder.build()).exec();
@@ -94,7 +94,7 @@ export class TestExaminationService {
         sentenceId: string,
         dto: UpdateSentenceDTO,
     ) {
-        const test = await this.getTestById(testId);
+        const test = await this.getTestDetailById(testId);
         if (!test) {
             return ERRORS.TestNotFound;
         }
@@ -105,37 +105,26 @@ export class TestExaminationService {
         if (result.error) {
             return result;
         }
-        try {
-            if (dto.order || dto.order === 0) {
-                await this.updateSentenceOrder(testId, sentenceId, dto.order);
-            }
-            return {
-                code: 0,
-                data: result.data,
-            };
-        } catch (err) {
-            this.logger.error(err);
-            return ERRORS.ServiceError;
-        }
+        return {
+            code: 0,
+            data: result.data,
+        };
     }
 
-    async getTestById(
-        testId: string,
-        queryOptions?: TestQueryOptions,
-    ): Promise<TestExamination> {
-        const { groupWithSentences = false, totalScore = false } =
-            queryOptions ?? {};
-        this.serviceHelper.filterByTestId(testId);
-        if (totalScore) {
-            this.serviceHelper.getWithTotalScore();
-        } else {
-            if (groupWithSentences) {
-                this.serviceHelper.groupWithSentences();
-            }
-        }
-        const aggregates = this.serviceHelper.build();
-        const [test] = await this.testModel.aggregate(aggregates);
+    async getTestDetailById(testId: string): Promise<TestExamination> {
+        const aggregates = this.sentenceServiceHelper
+            .filterByTestId({ test_id: testId })
+            .groupByTest()
+            .build();
+
+        const [test] = await this.sentenceModel.aggregate(aggregates);
         return test;
+    }
+
+    async findTestById(testId: string) {
+        return this.testModel.findOne({
+            test_id: testId,
+        });
     }
 
     async searchTest(
@@ -148,12 +137,12 @@ export class TestExaminationService {
             sort_by = "created_date",
             topic_id = null,
             sort_order = -1,
-            verifying_status,
+            available_status,
             type,
         } = dto;
         const { start = 0, limit } = queryOptions ?? {};
         const aggregates = this.serviceHelper
-            .filter({ title, creator_id, verifying_status, type, topic_id })
+            .filter({ title, creator_id, available_status, type, topic_id })
             .sort({ sort_by, sort_order })
             .groupWithTopic("topic_id", false)
             .limit({ start, limit })
@@ -172,11 +161,11 @@ export class TestExaminationService {
             const test = await this.testModel.findOneAndUpdate(
                 {
                     test_id: testId,
-                    verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
+                    available_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
                 },
                 {
                     $set: {
-                        verifying_status: TEST_AVAILABLE_STATUSES.UNAVAILABLE,
+                        available_status: TEST_AVAILABLE_STATUSES.UNAVAILABLE,
                     },
                 },
                 {
@@ -186,7 +175,6 @@ export class TestExaminationService {
             if (!test) {
                 return ERRORS.TestNotFound;
             }
-            // this.sentenceService.deleteSentencesByTestId(test.test_id);
             return {
                 code: 0,
                 data: {
@@ -206,11 +194,11 @@ export class TestExaminationService {
             const test = await this.testModel.findOneAndUpdate(
                 {
                     test_id: testId,
-                    verifying_status: TEST_AVAILABLE_STATUSES.UNAVAILABLE,
+                    available_status: TEST_AVAILABLE_STATUSES.UNAVAILABLE,
                 },
                 {
                     $set: {
-                        verifying_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
+                        available_status: TEST_AVAILABLE_STATUSES.AVAILABLE,
                     },
                 },
                 {
@@ -253,34 +241,17 @@ export class TestExaminationService {
         }
     }
 
-    async deleteSentenceById(sentenceId: string): Promise<ServiceResult<any>> {
-        try {
-            const sentence = await this.sentenceModel.findOneAndDelete({
-                sentence_id: sentenceId,
-            });
-            if (!sentence) {
-                return ERRORS.QuestionNotFound;
-            }
-            await this.findTestAndRemoveSentences(sentence.test_id, [
-                sentenceId,
-            ]);
-            return {
-                code: 0,
-                data: {
-                    sentence_id: sentence.sentence_id,
-                },
-            };
-        } catch (err) {
-            this.logger.error(err);
-            return ERRORS.ServiceError;
-        }
-    }
-
+    /**
+     * @deprecated
+     * @param testId
+     * @param sentence
+     * @returns
+     */
     async addSentence(
         testId: string,
         sentence: CreateSentenceDTO,
     ): Promise<ServiceResult<any>> {
-        const test = await this.getTestById(testId);
+        const test = await this.getTestDetailById(testId);
         if (!test) {
             return ERRORS.TestNotFound;
         }
@@ -323,7 +294,7 @@ export class TestExaminationService {
         testId: string,
         sentenceDTOs: CreateSentenceDTO[],
     ): Promise<ServiceResult<any>> {
-        const test = await this.getTestById(testId);
+        let test = await this.findTestById(testId);
         if (!test) {
             return ERRORS.TestNotFound;
         }
@@ -334,17 +305,14 @@ export class TestExaminationService {
         if (createSentenceResult.error) {
             return createSentenceResult;
         }
-        const {
-            data: { sentence_ids },
-        } = createSentenceResult;
         try {
-            await this.testModel.updateOne(
+            test = await this.testModel.findOneAndUpdate(
                 {
                     test_id: test.test_id,
                 },
                 {
-                    $push: {
-                        list_sentence_ids: sentence_ids,
+                    $inc: {
+                        sentence_count: sentenceDTOs.length,
                     },
                 },
             );
@@ -352,81 +320,7 @@ export class TestExaminationService {
                 code: 0,
                 data: {
                     test_id: testId,
-                    list_sentence_ids: sentence_ids,
-                },
-            };
-        } catch (err) {
-            this.logger.error(err);
-            return ERRORS.ServiceError;
-        }
-    }
-
-    async getTestWithSentences(
-        testId: string,
-        queryOptions: SentenceQueryOptions,
-    ): Promise<
-        ServiceResult<{
-            total_count: number;
-            test: TestExamination & { total_count: number; sentences: any[] };
-        }>
-    > {
-        const { start = 0, limit, verifying_status } = queryOptions;
-        const aggregates = this.serviceHelper
-            .filterByTestId(testId)
-            .filter({ verifying_status })
-            .sentenceIdsInRange({ start, limit })
-            .groupWithSentences()
-            .build();
-        const [test] = await this.testModel.aggregate(aggregates);
-        if (!test) {
-            return ERRORS.TestNotFound;
-        }
-        return {
-            code: 0,
-            data: {
-                total_count: test.total_count,
-                test,
-            },
-        };
-    }
-
-    async getSentenceByIndex(
-        testId: string,
-        index: number,
-    ): Promise<ServiceResult<Sentence>> {
-        const aggregates = this.serviceHelper
-            .filterByTestId(testId)
-            .sentenceIdsInRange({ start: index, limit: 1 })
-            .groupWithSentences()
-            .build();
-        const [test] = await this.testModel.aggregate(aggregates);
-        if (!test) {
-            return ERRORS.TestNotFound;
-        }
-        return {
-            code: 0,
-            data: test.sentences?.[0],
-        };
-    }
-
-    async removeSentences(
-        testId: string,
-        sentenceIds: string[],
-    ): Promise<ServiceResult<any>> {
-        try {
-            const test = await this.findTestAndRemoveSentences(
-                testId,
-                sentenceIds,
-            );
-            if (!test) {
-                return ERRORS.TestNotFound;
-            }
-
-            await this.sentenceService.deleteSentenceBulk(testId, sentenceIds);
-            return {
-                code: 0,
-                data: {
-                    test_id: testId,
+                    list_sentence_ids: createSentenceResult.data.sentence_ids,
                 },
             };
         } catch (err) {
@@ -437,55 +331,26 @@ export class TestExaminationService {
 
     async getTotalScore(
         testId: string,
-    ): Promise<ServiceResult<{ total_score: number; test_id: string }>> {
-        const test = await this.getTestById(testId);
-        if (!test) {
-            return ERRORS.TestNotFound;
-        }
-        const aggregates = this.serviceHelper
-            .totalScore(test.test_id, test.default_score_per_sentence)
+    ): Promise<{
+        total_score: number;
+        test_id: string;
+        sentence_count: number;
+    }> {
+        const build = await this.sentenceServiceHelper
+            .filterByTestId({ test_id: testId })
+            .groupByTest()
             .build();
 
-        const [result] = await this.sentenceModel.aggregate(aggregates);
+        const [result] = await this.sentenceModel.aggregate(build);
+        if (!result) {
+            return null;
+        }
+        const { test_id, total_score, sentence_count } = result;
         return {
-            code: 0,
-            data: result,
+            test_id,
+            total_score,
+            sentence_count,
         };
-    }
-
-    protected async updateSentenceOrder(
-        testId: string,
-        sentenceId: string,
-        newOrder: number,
-    ) {
-        await this.findTestAndRemoveSentences(testId, [sentenceId]);
-        await this.testModel.updateOne(
-            {
-                test_id: testId,
-            },
-            {
-                $push: {
-                    list_sentence_ids: {
-                        $position: newOrder,
-                        $each: [sentenceId],
-                    },
-                },
-            },
-        );
-    }
-
-    protected async findTestAndRemoveSentences(
-        testId: string,
-        sentenceIds: string[],
-    ) {
-        return this.testModel.findOneAndUpdate(
-            {
-                test_id: testId,
-            },
-            {
-                $pull: { list_sentence_ids: { $in: sentenceIds } },
-            },
-        );
     }
 
     protected async createTestInstance(
@@ -494,7 +359,7 @@ export class TestExaminationService {
     ): Promise<ServiceResult<TestExamination>> {
         const input = {
             ...dto,
-            verifying_status: status,
+            available_status: status,
         };
         const topic = await this.isTopicExist(dto.topic_id);
         if (!topic) {
