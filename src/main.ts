@@ -23,7 +23,11 @@ async function bootstrap() {
         origin: appConfig.cors(),
         credentials: true,
     });
-    app.use(cookieParser());
+    app.use(
+        cookieParser({
+            domain: process.env.COOKIE_DOMAIN,
+        }),
+    );
 
     const port = appConfig.port();
     await app.listen(port);
