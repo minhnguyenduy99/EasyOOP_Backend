@@ -49,7 +49,7 @@ export class TaskExercise implements ITask {
                 } as AttachmentElement
                 push.subtitle = []
                 if (e.list_sentence_ids) {
-                    push.subtitle.push(Lang.get(Lang.txt_ExerciseNQuestion, e.list_sentence_ids.length))
+                    push.subtitle.push(Lang.get(Lang.txt_ExerciseNQuestion, e.sentence_count))
                 }
                 if (e.limited_time) {
                     push.subtitle.push(Lang.get(Lang.txt_ExerciseTime, SessionTimer.parse(e.limited_time)))
@@ -62,14 +62,14 @@ export class TaskExercise implements ITask {
                         title: Lang.get(Lang.txt_ExerciseDoNow),
                         payload: {
                             tid: TaskID.Test,
-                            args: [psid, e.test_id, e.limited_time ? e.limited_time : -1, e.list_sentence_ids.length]
+                            args: [psid, e.test_id, e.limited_time ? e.limited_time : -1, e.sentence_count]
                         }
                     },
                     {
                         title: Lang.get(Lang.txt_ExerciseHelpThenDoNow),
                         payload: {
                             tid: TaskID.TestHelp,
-                            args: [psid, e.test_id, e.limited_time ? e.limited_time : -1, e.list_sentence_ids.length]
+                            args: [psid, e.test_id, e.limited_time ? e.limited_time : -1, e.sentence_count]
                         }
                     }
                 ]
@@ -205,7 +205,7 @@ export class TaskExercise implements ITask {
 
     private async _onChooseQuestion(psid: string, test_id: string, questionIndex: number, total: number) {
         if (questionIndex >= total)
-            return this._onChoosePage(psid, test_id, ~~(total / this.pageNum), total)
+            return this._onChoosePage(psid, test_id, ~~((total - 1) / this.pageNum), total)
         let session = this.__cacheSession[psid] as TestSession
         let checkEnd = await this.checkEndTest(session, psid)
         if (checkEnd)
@@ -349,8 +349,10 @@ export class TaskExercise implements ITask {
     }
 
     private async checkEndTest(session: TestSession, psid: string) {
+        if (!session.expired)
+            return false
         if (session.expired - Date.now() < 0)
             return new SimpleText({ text: Lang.get(Lang.txt_ExerciseForceEnd) }, this._onSubmit.bind(this), psid)
-        return false;
+        return false
     }
 }
