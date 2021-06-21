@@ -288,7 +288,9 @@ export class PostService implements IPostService {
 
     async getPostsGroupedByTopic(): Promise<any[]> {
         try {
-            const listTopics = await this.topicModel.find();
+            const listTopics = await this.topicModel
+                .find()
+                .sort({ topic_order: 1 });
             const results = [];
             for (const topic of listTopics) {
                 const result = await this.getPostByTopic(topic);

@@ -140,7 +140,7 @@ export class TopicService implements ITopicService {
     }
 
     async getAllTopics() {
-        return this.topicModel.find();
+        return this.topicModel.find().sort({ topic_order: 1 });
     }
 
     async searchTopic(keyword: string, limiter?: LimitOptions) {
