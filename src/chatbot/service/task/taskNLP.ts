@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ResponseMessenger } from "src/chatbot/helpers/mesenger-packer";
 import { NLPService, Label, INLPResult, constant } from "src/lib/nlp";
 import { ITask } from "./ITask";
+import { TaskAbout } from "./TaskAbout";
 import { TaskExercise } from "./TaskExercise";
 import { TaskLogin } from "./TaskLogin";
 import { TaskMenu } from "./TaskMenu";
@@ -17,6 +18,7 @@ export class TaskNLP implements ITask {
         protected readonly taskExercise: TaskExercise,
         protected readonly Log: Logger,
         protected readonly NLP: NLPService,
+        protected readonly taskAbout: TaskAbout,
         protected readonly taskLogin: TaskLogin,
         protected readonly taskMenu: TaskMenu,
         protected readonly taskTopic: TaskTopic,
@@ -30,6 +32,8 @@ export class TaskNLP implements ITask {
     public async handler(text: string, psid?: string) {
         const regular = await this.NLP.getRegular(text);
         switch (Label.type[regular]) {
+            case Label.type.__label__about:
+                return this.taskAbout.handler();
             case Label.type.__label__login:
                 return this.taskLogin.handle(psid);
             case Label.type.__label__menu:
