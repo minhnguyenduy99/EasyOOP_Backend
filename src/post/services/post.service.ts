@@ -149,6 +149,7 @@ export class PostService implements IPostService {
             return POST_ERRORS.PostNotFound;
         }
         dto["post_id"] = postId;
+        dto["created_date"] = post.created_date;
         dto.post_status = POST_STATUSES.PENDING_UPDATED;
         if (dto.previous_post_id === post.previous_post_id) {
             dto.next_post_id = post.next_post_id;
