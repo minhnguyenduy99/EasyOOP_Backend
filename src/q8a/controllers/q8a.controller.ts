@@ -35,6 +35,7 @@ import {
 } from "../dtos";
 import { Q8AService } from "../services/q8a.service";
 import ERRORS from "../errors";
+import { TagDTO, TagService, TagType } from "src/tag";
 
 @Controller("/q8a")
 @UseGuards(RoleAuthorizationGuard)
@@ -49,6 +50,7 @@ export class Q8AController {
     constructor(
         private q8aService: Q8AService,
         private paginatorFactory: PaginatorFactory,
+        private tagService: TagService,
     ) {
         this.paginator = this.paginatorFactory.createPaginator({
             pageURL: "/q8a/search",
@@ -127,6 +129,19 @@ export class Q8AController {
             });
         }
         return result;
+    }
+
+    @Get("/tags/search")
+    @Serialize(TagDTO)
+    async searchUnusedTags(@Query("search") search: string) {
+        const { results } = await this.tagService.searchForTags({
+            value: search,
+            used: false,
+            type: TagType.question,
+            start: 0,
+            limit: 100,
+        });
+        return results;
     }
 
     @Get("/tag/:tag_id")

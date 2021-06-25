@@ -11,6 +11,7 @@ export default {
                 "updateQ8A",
                 "getQ8AById",
                 "getQ8AByTag",
+                "searchUnusedTags",
             ],
         },
     ],
