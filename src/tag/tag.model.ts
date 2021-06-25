@@ -37,7 +37,12 @@ TagSchema.index({
     tag_id: 1,
 });
 
-TagSchema.index({
-    tag_type: 1,
-    tag_id: 1,
-});
+TagSchema.index(
+    {
+        tag_type: 1,
+        tag_id: 1,
+    },
+    {
+        unique: true,
+    },
+);

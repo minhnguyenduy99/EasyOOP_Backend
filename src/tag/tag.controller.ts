@@ -1,16 +1,28 @@
-import { Controller, Get, Param, Query, UseInterceptors } from "@nestjs/common";
 import {
+    Body,
+    Controller,
+    Get,
+    Param,
+    Query,
+    UseInterceptors,
+    Post,
+    Put,
+    BadRequestException,
+} from "@nestjs/common";
+import {
+    BodyValidationPipe,
     QueryValidationPipe,
     ResponseSerializerInterceptor,
     Serialize,
 } from "src/lib/helpers";
-import { PaginationSerializer } from "src/lib/helpers/serializers/base-pagination.serializer";
+import { PaginationSerializer } from "src/lib/helpers";
 import {
     IPaginator,
     PaginatorFactory,
     ParsePagePipe,
 } from "src/lib/pagination";
-import { PaginatedTagDTO, TagDTO, TagSearchDTO } from "./tag.dto";
+import { CommonResponse } from "src/lib/types";
+import { CreateTagsDTO, TagDTO, TagSearchDTO, UpdateTagDTO } from "./tag.dto";
 import { TagService } from "./tag.service";
 
 @Controller("/tags")
@@ -23,26 +35,48 @@ export class TagController {
         paginatorFactory: PaginatorFactory,
     ) {
         this.paginator = paginatorFactory.createPaginator({
-            pageURL: "http://localhost:3000/tags/search",
+            pageURL: "/tags/search",
         });
     }
 
+    @Post("/bulk")
+    async createTags(@Body(BodyValidationPipe) dto: CreateTagsDTO) {
+        const result = await this.tagService.createTags(dto);
+        return result;
+    }
+
+    @Get("/byid/:tagId")
+    @Serialize(TagDTO)
+    async findTagById(@Param("tagId") tagId: string) {
+        const tag = this.tagService.getTagById(tagId);
+        return tag;
+    }
+
+    @Put("/byid/:tagId")
+    @Serialize(CommonResponse(TagDTO))
+    async updateTag(
+        @Param("tagId") tagId: string,
+        @Body(BodyValidationPipe) dto: UpdateTagDTO,
+    ) {
+        const result = await this.tagService.updateTag(tagId, dto);
+        if (result.error) {
+            throw new BadRequestException(result);
+        }
+        return result;
+    }
+
     @Get("/search")
-    @Serialize(PaginationSerializer(TagDTO))
+    @Serialize(TagDTO)
     async searchForTags(@Query(QueryValidationPipe) tagSearch: TagSearchDTO) {
-        const { page, ...search } = tagSearch;
-        const start = (page - 1) * this.DEFAULT_COUNT_PER_PAGE;
-        const limit = this.DEFAULT_COUNT_PER_PAGE;
-        const { count, results } = await this.tagService.searchForTags({
-            ...search,
+        const start = 0;
+        const limit = 100;
+        console.log(tagSearch);
+        const { results } = await this.tagService.searchForTags({
+            ...tagSearch,
             limit,
             start,
         });
-        const paginatedResult = await this.paginator.paginate(results, count, {
-            page,
-            additionQuery: search,
-        });
-        return paginatedResult;
+        return results;
     }
 
     @Get("/:type")
