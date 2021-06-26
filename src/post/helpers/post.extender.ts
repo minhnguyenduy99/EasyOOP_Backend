@@ -11,6 +11,8 @@ export interface PostFilterOptions {
     post_status?: number;
     keyword?: string;
     topic_id?: string;
+    tags?: string[];
+    tagSearchType?: number;
 }
 
 @Injectable()
@@ -112,6 +114,8 @@ export class PostServiceExtender {
             topic_id = null,
             post_status = null,
             author_id = null,
+            tags = [],
+            tagSearchType = 0,
         } = options;
         builder.match({
             ...(keyword && {
@@ -121,6 +125,7 @@ export class PostServiceExtender {
             }),
             ...(author_id && { author_id }),
         });
+        this.filterByTags(builder, tags, tagSearchType);
         if (post_status !== -1) {
             builder.match({ post_status });
         }
@@ -130,17 +135,19 @@ export class PostServiceExtender {
         return this;
     }
 
-    filterByTag(builder: AggregateBuilder, tagId: string) {
-        builder
-            .match({
-                tags: tagId,
-            })
-            .lookup({
-                from: this.tagModel,
-                localField: "tags",
-                foreignField: "tag_id",
-                as: "tags",
-            });
+    filterByTags(
+        builder: AggregateBuilder,
+        tagIds: string[],
+        tagSearchType?: number,
+    ) {
+        console.log(tagIds);
+        if (!tagIds || tagIds.length === 0) {
+            return;
+        }
+        const search = tagSearchType === 0 ? { $all: tagIds } : { $in: tagIds };
+        builder.match({
+            tags: search,
+        });
 
         return this;
     }

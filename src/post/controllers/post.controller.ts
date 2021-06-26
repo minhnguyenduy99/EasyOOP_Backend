@@ -55,7 +55,13 @@ export class PostController {
         @Param("page", ParseIntPipe) page: number,
         @Query(QueryValidationPipe) searchOptions: GetPostsDTO,
     ) {
-        const { search, sort_by, sort_order } = searchOptions;
+        const {
+            search,
+            sort_by,
+            sort_order,
+            tags,
+            tagSearchType,
+        } = searchOptions;
         const limit = {
             start: (page - 1) * this.DEFAULT_PAGE_SIZE,
             limit: this.DEFAULT_PAGE_SIZE,
@@ -64,6 +70,8 @@ export class PostController {
             keyword: search,
             topic_id: searchOptions.topic_id,
             post_status: POST_STATUSES.ACTIVE,
+            tags,
+            tagSearchType,
         } as PostFilterOptions;
         const sorter = {
             field: sort_by,
