@@ -28,10 +28,20 @@ export class SentenceServiceHelper {
     groupByTest() {
         this.builder
             .aggregate({
+                $addFields: {
+                    use_default_score: {
+                        $cond: [{ $eq: ["$score", 0] }, 1, 0],
+                    },
+                },
+            })
+            .aggregate({
                 $group: {
                     _id: "$test_id",
                     total_score: {
                         $sum: "$score",
+                    },
+                    default_score_sentence_count: {
+                        $sum: "$use_default_score",
                     },
                 },
             })
@@ -43,6 +53,21 @@ export class SentenceServiceHelper {
                 single: true,
                 as: "test",
                 removeFields: ["__v"],
+            })
+            .aggregate({
+                $set: {
+                    total_score: {
+                        $sum: [
+                            "$total_score",
+                            {
+                                $multiply: [
+                                    "$default_score_sentence_count",
+                                    "$default_score_per_sentence",
+                                ],
+                            },
+                        ],
+                    },
+                },
             });
         return this;
     }
