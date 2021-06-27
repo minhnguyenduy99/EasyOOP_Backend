@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { VNTK } from "vntk";
 import { classifier, constant } from ".";
+import { KeyworkChecker } from "./nlp.keyword-checker.service";
 import { RuleBasedSentenceBoundaryDetection } from "./nlp.sentence-boundary.service"
 
 export interface INLPResult {
@@ -11,7 +12,10 @@ export interface INLPResult {
 
 @Injectable()
 export class NaturalLanguageProcessing {
-    constructor(private readonly rbsbd: RuleBasedSentenceBoundaryDetection) { }
+    constructor(
+        private readonly rbsbd: RuleBasedSentenceBoundaryDetection,
+        private readonly keyworkChecker: KeyworkChecker,
+    ) { }
 
     private fixMissing(input: VNTK.Utility.FastTextClassifierResult[], like: VNTK.Utility.FastTextClassifierResult[]) {
         if (input.length > 0 && input[0].value > constant.trustThreshold) {
@@ -32,7 +36,7 @@ export class NaturalLanguageProcessing {
                 let topic = [] as Promise<VNTK.Utility.FastTextClassifierResult[]>[]
                 for (let i = 0, len = raws.length; i < len; i++) {
                     type[i] = classifier.type.predict(raws[i], option.limitOrThreadhold)
-                    topic[i] = classifier.topic.predict(raws[i], option.limitOrThreadhold)
+                    topic[i] = this.keyworkChecker.check(raws[i]) || classifier.topic.predict(raws[i], option.limitOrThreadhold)
                 }
                 Promise.all([Promise.all(type), Promise.all(topic)]).then(([resType, resTopic]) => {
                     let ret = [] as INLPResult[]
