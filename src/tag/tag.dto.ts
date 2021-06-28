@@ -25,11 +25,10 @@ export class CreateTagsDTO {
 }
 export class UpdateTagDTO {
     @IsNotEmpty()
-    @IsIn(Object.keys(TagType))
-    tag_type: string;
+    tag_value: string;
 
     @IsNotEmpty()
-    tag_value: string;
+    tag_id: string;
 }
 
 export class TagSearchDTO {

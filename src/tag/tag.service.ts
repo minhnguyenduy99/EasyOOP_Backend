@@ -20,9 +20,14 @@ export interface ITagService {
     ): Promise<
         ServiceResult<{ count: number; failedCount?: number; errors?: any[] }>
     >;
-    getTagById(tagId: string): Promise<Tag>;
+    getTagById(tagId: string, type: string): Promise<Tag>;
     getAllTagsByType(type: string): Promise<Tag[]>;
-    updateTag(tagId: string, dto: UpdateTagDTO): Promise<ServiceResult<Tag>>;
+    updateTag(
+        tagType: string,
+        tagId: string,
+        dto: UpdateTagDTO,
+    ): Promise<ServiceResult<Tag>>;
+    deleteTag(tagId: string, tagType: string): Promise<ServiceResult<any>>;
 }
 
 @Injectable()
@@ -32,8 +37,39 @@ export class TagService implements ITagService {
         private logger: Logger,
     ) {}
 
-    async getTagById(tagId: string): Promise<Tag> {
-        const tag = await this.tagModel.findOne({ tag_id: tagId });
+    async deleteTag(
+        tagId: string,
+        tagType: string,
+    ): Promise<ServiceResult<any>> {
+        try {
+            const tag = await this.tagModel.findOneAndDelete(
+                {
+                    tag_type: tagType,
+                    tag_id: tagId,
+                    used: false,
+                },
+                {
+                    useFindAndModify: false,
+                },
+            );
+            if (!tag) {
+                return ServiceErrors.TagNotFound;
+            }
+            return {
+                code: 0,
+                data: tag,
+            };
+        } catch (err) {
+            this.logger.error(err);
+            return ServiceErrors.ServiceError;
+        }
+    }
+
+    async getTagById(tagId: string, type: string): Promise<Tag> {
+        const tag = await this.tagModel.findOne({
+            tag_type: type,
+            tag_id: tagId,
+        });
         return tag;
     }
 
@@ -87,18 +123,24 @@ export class TagService implements ITagService {
     }
 
     async updateTag(
+        tagType: string,
         tagId: string,
         dto: UpdateTagDTO,
     ): Promise<ServiceResult<Tag>> {
-        const { tag_type, tag_value } = dto;
-        const currentTag = await this.tagModel.findOne({
-            tag_type,
-            tag_id: tagId,
-        });
+        const { tag_value, tag_id: newTagId } = dto;
+        const [newTag, currentTag] = await Promise.all([
+            this.getTagById(newTagId, tagType),
+            this.getTagById(tagId, tagType),
+        ]);
         if (!currentTag) {
             return ServiceErrors.TagNotFound;
         }
+        if (newTag && newTagId !== tagId) {
+            return ServiceErrors.DuplicateTagID;
+        }
         try {
+            // tag_id is allowed to update when it is not currently used
+            !currentTag.used && (currentTag.tag_id = newTagId);
             currentTag.tag_value = tag_value;
             await currentTag.save();
             return {
@@ -181,6 +223,10 @@ export class TagService implements ITagService {
                     }),
                     ...(type && { tag_type: type }),
                     ...(used !== null && { used }),
+                })
+                .sort({
+                    used: 1,
+                    tag_value: 1,
                 })
                 .limit({
                     start,

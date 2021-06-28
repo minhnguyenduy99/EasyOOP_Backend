@@ -49,12 +49,18 @@ export class Q8AService implements IQ8AService {
         });
     }
 
-    async createQ8A(input: CreateQ8ADTO) {
+    async createQ8A(input: CreateQ8ADTO): Promise<CommitActionResult<any>> {
         const { tag_id } = input;
         if (tag_id) {
-            const result = await this.validateTag(tag_id);
-            if (result.error) {
-                return result as CommitActionResult<any>;
+            const tag = await this.tagService.getTagById(
+                tag_id,
+                TagType.question,
+            );
+            if (!tag) {
+                return ServiceErrors.InvalidTag;
+            }
+            if (tag.used) {
+                return ServiceErrors.UsedTag;
             }
         }
         try {
@@ -155,11 +161,11 @@ export class Q8AService implements IQ8AService {
     }
 
     protected async validateTag(tagId: string, currentTagId: string = null) {
-        let tag = await this.tagService.getTagById(tagId);
-        if (!tag || tag.tag_type !== TagType.question) {
+        let tag = await this.tagService.getTagById(tagId, TagType.question);
+        if (!tag) {
             return ServiceErrors.InvalidTag;
         }
-        if (tag.used && tagId !== currentTagId) {
+        if (tag.used && currentTagId !== tagId) {
             return ServiceErrors.UsedTag;
         }
         return {

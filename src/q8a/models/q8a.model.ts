@@ -5,7 +5,6 @@ import { GenerateDigitID } from "src/post/modules/core/id-generator";
 @Schema()
 export class Q8AModel extends Document {
     @Prop({
-        required: true,
         unique: true,
     })
     qa_id: string;
@@ -34,7 +33,7 @@ export class Q8AModel extends Document {
 export const Q8ASchema = SchemaFactory.createForClass(Q8AModel);
 
 Q8ASchema.pre("save", function (next) {
-    if (this.isNew && !this.qa_id) {
+    if (this.isNew) {
         this.qa_id = GenerateDigitID(10);
     }
     next();

@@ -34,6 +34,10 @@ TagSchema.index({
 });
 
 TagSchema.index({
+    used: 1,
+});
+
+TagSchema.index({
     tag_id: 1,
 });
 

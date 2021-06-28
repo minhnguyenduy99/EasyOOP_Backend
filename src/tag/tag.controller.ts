@@ -8,6 +8,8 @@ import {
     Post,
     Put,
     BadRequestException,
+    NotFoundException,
+    Delete,
 } from "@nestjs/common";
 import {
     BodyValidationPipe,
@@ -24,6 +26,7 @@ import {
 import { CommonResponse } from "src/lib/types";
 import { CreateTagsDTO, TagDTO, TagSearchDTO, UpdateTagDTO } from "./tag.dto";
 import { TagService } from "./tag.service";
+import ERRORS from "./errors";
 
 @Controller("/tags")
 @UseInterceptors(ResponseSerializerInterceptor)
@@ -45,20 +48,43 @@ export class TagController {
         return result;
     }
 
-    @Get("/byid/:tagId")
-    @Serialize(TagDTO)
-    async findTagById(@Param("tagId") tagId: string) {
-        const tag = this.tagService.getTagById(tagId);
-        return tag;
+    @Get("/:tagType/:tagId")
+    @Serialize(CommonResponse(TagDTO))
+    async findTagById(
+        @Param("tagType") tagType: string,
+        @Param("tagId") tagId: string,
+    ) {
+        const tag = await this.tagService.getTagById(tagId, tagType);
+        if (!tag) {
+            throw new NotFoundException(ERRORS.TagNotFound);
+        }
+        return {
+            code: 0,
+            data: tag,
+        };
     }
 
-    @Put("/byid/:tagId")
+    @Put("/:tagType/:tagId")
     @Serialize(CommonResponse(TagDTO))
     async updateTag(
         @Param("tagId") tagId: string,
+        @Param("tagType") tagType: string,
         @Body(BodyValidationPipe) dto: UpdateTagDTO,
     ) {
-        const result = await this.tagService.updateTag(tagId, dto);
+        const result = await this.tagService.updateTag(tagType, tagId, dto);
+        if (result.error) {
+            throw new BadRequestException(result);
+        }
+        return result;
+    }
+
+    @Delete("/:tagType/:tagId")
+    @Serialize(CommonResponse(TagDTO))
+    async deleteTag(
+        @Param("tagId") tagId: string,
+        @Param("tagType") tagType: string,
+    ) {
+        const result = await this.tagService.deleteTag(tagId, tagType);
         if (result.error) {
             throw new BadRequestException(result);
         }
@@ -70,7 +96,6 @@ export class TagController {
     async searchForTags(@Query(QueryValidationPipe) tagSearch: TagSearchDTO) {
         const start = 0;
         const limit = 100;
-        console.log(tagSearch);
         const { results } = await this.tagService.searchForTags({
             ...tagSearch,
             limit,
