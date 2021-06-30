@@ -90,20 +90,27 @@ export class TestServiceHelper {
                 mergeObject: true,
                 as: "topic",
                 removeFields: ["__v"],
+            })
+            .sort({
+                topic_order: 1,
             });
         return this;
     }
 
     groupWithTopic(localField = "topic_id", merge = true) {
-        this.builder.lookup({
-            from: this.topicModel,
-            localField: localField,
-            foreignField: "topic_id",
-            single: true,
-            mergeObject: merge,
-            as: "topic",
-            removeFields: ["__v"],
-        });
+        this.builder
+            .lookup({
+                from: this.topicModel,
+                localField: localField,
+                foreignField: "topic_id",
+                single: true,
+                mergeObject: merge,
+                as: "topic",
+                removeFields: ["__v"],
+            })
+            .sort({
+                topic_order: 1,
+            });
 
         return this;
     }

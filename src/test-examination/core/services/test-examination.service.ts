@@ -45,7 +45,9 @@ export class TestExaminationService {
     }
 
     async getAllTopics() {
-        const topics = await this.topicModel.find();
+        const topics = await this.topicModel.find().sort({
+            topic_order: 1,
+        });
         return topics;
     }
 

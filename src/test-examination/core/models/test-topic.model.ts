@@ -10,6 +10,9 @@ export class TestTopic extends Document {
     topic_id: string;
 
     @Prop()
+    topic_order: number;
+
+    @Prop()
     topic_title: string;
 }
 
@@ -20,6 +23,10 @@ TestTopicSchema.pre("save", function (next) {
         this.topic_id = GenerateDigitID(10);
     }
     next();
+});
+
+TestTopicSchema.index({
+    topic_order: 1,
 });
 
 TestTopicSchema.index({
