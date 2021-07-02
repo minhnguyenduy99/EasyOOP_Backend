@@ -148,9 +148,10 @@ export class TestResultService {
         const { results, ...testResultInfo } = dto;
         const result = this.getObtainedScore(results, test);
         let input = {
-            results: results.map((sentence, index) => ({
-                ...sentence,
-                answer: test.sentences[index].answer,
+            results: test.sentences.map((sentence, index) => ({
+                sentence_id: sentence.sentence_id,
+                answer: sentence.answer,
+                user_answer: results[index]?.user_answer ?? -1,
             })),
             ...testResultInfo,
             ...result,
