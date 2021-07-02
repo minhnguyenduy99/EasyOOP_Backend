@@ -21,6 +21,8 @@ import {
 import { AuthenticationModule, RootAuthService } from "./lib/authentication";
 import { PaginationModule } from "./lib/pagination";
 import { TestExaminationModule } from "./test-examination";
+import { ServeStaticModule } from "@nestjs/serve-static";
+import { join } from "path";
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -30,6 +32,9 @@ import { TestExaminationModule } from "./test-examination";
         AppConfigModule.forRoot({
             appConfigClass: AppConfigService,
             appEnvConfigClass: AppConfigService,
+        }),
+        ServeStaticModule.forRoot({
+            rootPath: join(__dirname, "..", "client"),
         }),
         EventEmitterModule.forRoot({
             delimiter: ".",
