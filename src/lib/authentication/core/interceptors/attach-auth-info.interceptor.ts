@@ -32,14 +32,18 @@ export class AttachAuthInfoInterceptor implements NestInterceptor {
         res.cookie(REQUEST_KEYS.ACCESS_TOKEN_COOKIE, value, {
             httpOnly: false,
             maxAge: 5 * 60 * 1000,
+            sameSite: "none",
             secure: true,
+            domain: process.env.COOKIE_DOMAIN,
         });
     }
 
     protected setRoleIDCookie(res: Response, value: string) {
         res.cookie(REQUEST_KEYS.ROLE_COOKIE, value, {
             httpOnly: true,
+            sameSite: "none",
             secure: true,
+            domain: process.env.COOKIE_DOMAIN,
         });
         return;
     }

@@ -10,19 +10,19 @@ const LogLevel = {
     "3": ["error", "warn"],
     "4": ["error"],
     "5": [],
-};
+}
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
-        logger: LogLevel[process.env.LOG_LEVEL ?? "0"],
+        logger: LogLevel[process.env.LOG_LEVEL],
     });
     const appConfig = app.get(AppConfigService);
 
     app.setGlobalPrefix("/api");
-    // app.enableCors({
-    //     origin: appConfig.cors(),
-    //     credentials: true,
-    // });
+    app.enableCors({
+        origin: appConfig.cors(),
+        credentials: true,
+    });
     app.use(
         cookieParser({
             domain: process.env.COOKIE_DOMAIN,
