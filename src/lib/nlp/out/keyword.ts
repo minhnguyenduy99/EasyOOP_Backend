@@ -4,7 +4,11 @@ const keyword = [
 		key: ["single responsibility","trách nhiệm duy nhất","nguyên tắc trách nhiệm duy nhất"]
 	},
 	{
-		topic: "__label__liskov",
+		topic: "__label__dependency_inversion",
+		key: ["dependency inversion","đảo ngược phụ thuộc","nguyên tắc đảo ngược phụ thuộc"]
+	},
+	{
+		topic: "__label__liskov_substitution",
 		key: ["liskov","liskov substitution","khả dĩ thay thế","nguyên tắc khả dĩ thay thế"]
 	},
 	{
@@ -17,7 +21,7 @@ const keyword = [
 	},
 	{
 		topic: "__label__open_closed",
-		key: ["open closed","đóng và mở","nguyên tắc đóng và mở"]
+		key: ["open closed","open close","đóng và mở","nguyên tắc đóng và mở"]
 	},
 	{
 		topic: "__label__private_def",
@@ -32,20 +36,20 @@ const keyword = [
 		key: ["oop","object oriented programming","hướng đối tượng","lập trình hướng đối tượng"]
 	},
 	{
-		topic: "__label__principle",
-		key: ["principle","principles","4 principle","4 principles","four principle","four principles","nguyên tắc","các nguyên tắc","4 nguyên tắc","bốn các nguyên tắc"]
-	},
-	{
 		topic: "__label__scope_def",
-		key: ["scope","phạm vi truy cập"]
+		key: ["scope","phạm vi truy cập","tầm vực"]
 	},
 	{
 		topic: "__label__abstraction_method",
-		key: ["abstraction method","trừu tượng","hàm trừu tượng","hàm ảo"]
+		key: ["abstraction method","abstract method","trừu tượng","hàm trừu tượng","hàm ảo"]
 	},
 	{
 		topic: "__label__abstraction_class",
-		key: ["abstraction class","lớp ảo","lớp trừu tượng"]
+		key: ["abstraction class","abstract class","lớp ảo","lớp trừu tượng"]
+	},
+	{
+		topic: "__label__friend_function",
+		key: ["friend method","friend function","hàm bạn","phương thức bạn"]
 	},
 	{
 		topic: "__label__mutiinheritance",
@@ -54,10 +58,6 @@ const keyword = [
 	{
 		topic: "__label__principle_solid",
 		key: ["principle solid","nguyên tắc solid","solid"]
-	},
-	{
-		topic: "__label__friend_method",
-		key: ["friend method","hàm bạn","phương thức bạn"]
 	},
 	{
 		topic: "__label__virtual",
@@ -69,11 +69,11 @@ const keyword = [
 	},
 	{
 		topic: "__label__derived_class",
-		key: ["derived class","class con","lớp con"]
+		key: ["derived class","child class","subclass","class con","lớp con"]
 	},
 	{
 		topic: "__label__encapsulation",
-		key: ["encapsulation","đóng gói"]
+		key: ["encapsulation","đóng gói","bao đóng"]
 	},
 	{
 		topic: "__label__friend_class",
@@ -84,12 +84,20 @@ const keyword = [
 		key: ["polymorphism","đa hình"]
 	},
 	{
+		topic: "__label__constructor",
+		key: ["constructor","hàm tạo"]
+	},
+	{
 		topic: "__label__inheritance",
 		key: ["inheritance","kế thừa"]
 	},
 	{
 		topic: "__label__base_class",
-		key: ["base class","lớp cha","class cha"]
+		key: ["base class","parent class","superclass","lớp cha","class cha"]
+	},
+	{
+		topic: "__label__destructor",
+		key: ["destructor","hàm hủy"]
 	},
 	{
 		topic: "__label__attribute",
@@ -105,19 +113,23 @@ const keyword = [
 	},
 	{
 		topic: "__label__method",
-		key: ["method","phương thước"]
+		key: ["method","phương thức"]
 	},
 	{
 		topic: "__label__object",
 		key: ["object","đối tượng"]
 	},
 	{
-		topic: "__label__class_struc",
-		key: ["class","lớp"]
-	},
-	{
 		topic: "__label__field_def",
 		key: ["field","trường"]
+	},
+	{
+		topic: "__label__generic",
+		key: ["generic"]
+	},
+	{
+		topic: "__label__class",
+		key: ["class","lớp"]
 	},
 ] as ikeyword[]
 
