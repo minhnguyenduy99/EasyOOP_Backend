@@ -4,7 +4,13 @@ import { Model, Types } from "mongoose";
 import { AggregateBuilder, LimitOptions } from "src/lib/database/mongo";
 import { Tag } from "src/tag";
 import { SortOptions } from "../dtos";
-import { Post, PostMetadata, POST_STATUSES, Topic } from "../modules/core";
+import {
+    Post,
+    PostMetadata,
+    POST_STATUSES,
+    TAG_TYPES,
+    Topic,
+} from "../modules/core";
 
 export interface PostFilterOptions {
     author_id?: string;
@@ -97,13 +103,20 @@ export class PostServiceExtender {
     }
 
     groupWithTags(builder: AggregateBuilder) {
-        builder.aggregate({
-            $lookup: {
-                from: this.tagModel.collection.name,
-                localField: "tags",
-                foreignField: "tag_id",
-                as: "tags",
-            },
+        builder.lookup({
+            from: this.tagModel,
+            localField: "tags",
+            foreignField: "tag_id",
+            pipeline: [
+                {
+                    $match: {
+                        tag_type: TAG_TYPES.post,
+                    },
+                },
+            ],
+            single: false,
+            as: "tags",
+            removeFields: ["__v"],
         });
         return this;
     }
