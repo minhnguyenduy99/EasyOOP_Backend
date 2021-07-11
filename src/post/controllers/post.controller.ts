@@ -44,7 +44,7 @@ export class PostController {
         paginatorFactory: PaginatorFactory,
     ) {
         this.paginator = paginatorFactory.createPaginator({
-            pageURL: "http://localhost:3000",
+            pageURL: "",
             pageSize: this.DEFAULT_PAGE_SIZE,
         });
     }
@@ -120,7 +120,7 @@ export class PostController {
         @Param("post_id", ParamValidationPipe)
         postId: string,
     ) {
-        const post = await this.postService.getPostById(postId);
+        const post = await this.postService.getAvailablePostById(postId);
         if (!post) {
             throw new NotFoundException({
                 code: -1,

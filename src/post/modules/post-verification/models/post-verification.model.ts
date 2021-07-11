@@ -1,5 +1,5 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types } from "mongoose";
+import { Prop, raw, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document, Schema as MongooseSchema } from "mongoose";
 import { GenerateDigitID } from "../../core";
 
 @Schema()
@@ -33,11 +33,16 @@ export class PostVerification extends Document {
     @Prop()
     author_id: string;
 
-    @Prop({
-        default: {},
-        type: Object,
-    })
-    custom_info: any;
+    @Prop(
+        raw({
+            message: { type: String, required: false },
+            post_info: {
+                type: Object,
+                required: false,
+            },
+        }),
+    )
+    custom_info: Record<string, any>;
 }
 
 export const PostVerificaionSchema = SchemaFactory.createForClass(

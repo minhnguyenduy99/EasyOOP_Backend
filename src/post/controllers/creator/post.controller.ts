@@ -22,32 +22,20 @@ import {
     QueryValidationPipe,
     ResponseSerializerInterceptor,
 } from "src/lib/helpers";
-import {
-    IPaginator,
-    IResultLimiter,
-    PaginatorFactory,
-    ParsePagePipe,
-} from "src/lib/pagination";
+import { IPaginator, PaginatorFactory } from "src/lib/pagination";
 import { CommonResponse } from "src/lib/types";
 import { PostFilterOptions, POST_ERRORS } from "../../helpers";
 import {
     CreatePostDTO,
     GetPostsDTO,
     PaginatedPostDTO,
-    PaginatedVerificationDTO,
     PostDTO,
     SortOptions,
 } from "../../dtos";
 import { PostService } from "../../services";
 import { ERRORS, TAG_TYPES } from "src/post/modules/core";
-import {
-    PostVerificationService,
-    SearchVerificationDTO,
-} from "src/post/modules/post-verification";
-import {
-    VERIFICATION_STATUS,
-    VERIFICATION_TYPES,
-} from "src/post/modules/post-verification/consts";
+import { PostVerificationService } from "src/post/modules/post-verification";
+import { VERIFICATION_TYPES } from "src/post/modules/post-verification/consts";
 import { AuthorizeClass } from "src/lib/authorization";
 import { RoleAuthorizationGuard, RoleUserData } from "src/role-management";
 import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
@@ -63,7 +51,6 @@ import { TagDTO, TagService } from "src/tag";
 export class CreatorPostController {
     protected readonly DEFAULT_PAGE_SIZE = 6;
     protected paginator: IPaginator;
-    protected pendingPostPaginator: IPaginator;
 
     constructor(
         private postService: PostService,
@@ -73,11 +60,6 @@ export class CreatorPostController {
     ) {
         this.paginator = paginatorFactory.createPaginator({
             pageURL: "",
-            pageSize: this.DEFAULT_PAGE_SIZE,
-            pageParamType: "param",
-        });
-        this.pendingPostPaginator = paginatorFactory.createPaginator({
-            pageURL: "/creator/posts/pending/search",
             pageSize: this.DEFAULT_PAGE_SIZE,
             pageParamType: "param",
         });
@@ -97,11 +79,13 @@ export class CreatorPostController {
         if (result.error) {
             throw new BadRequestException(result);
         }
+        const { post_id } = result.data;
+        const createdPost = await this.postService.getPostById(post_id, false);
         this.postVerification.createVerification({
             type: VERIFICATION_TYPES.CREATED,
             post_id: result.data.post_id,
             author_id: author.role_id,
-            post_info: result.data,
+            post_info: createdPost,
         });
         return {
             code: result.code,
@@ -126,11 +110,13 @@ export class CreatorPostController {
         if (result["error"]) {
             throw new BadRequestException(result);
         }
+        const { post_id } = result.data;
+        const createdPost = await this.postService.getPostById(post_id, false);
         this.postVerification.createVerification({
             type: VERIFICATION_TYPES.UPDATED,
             post_id: result.data.post_id,
             author_id: author.role_id,
-            post_info: result.data,
+            post_info: createdPost,
         });
         return {
             code: 0,
@@ -151,24 +137,17 @@ export class CreatorPostController {
         return post;
     }
 
-    @Serialize(CommonResponse())
-    @Put("/pending/:post_id")
-    @UseFormData({
-        fileField: ["content_file", "thumbnail_file"],
-    })
-    async updatePendingPost(
+    @Get("/:post_id/status/all")
+    @Serialize(PostDTO)
+    async getAllVersionsOfPost(
         @Param("post_id", ParamValidationPipe)
         postId: string,
-        @Body() dto: CreatePostDTO,
     ) {
-        const result = await this.postService.updatePendingPost(postId, dto);
-        if (result.error) {
-            throw new BadRequestException(result);
+        const posts = await this.postService.getAllVersionsOfPost(postId);
+        if (posts.length === 0) {
+            throw new NotFoundException(POST_ERRORS.PostNotFound);
         }
-        return {
-            code: 0,
-            data: result.data.post_id,
-        };
+        return posts;
     }
 
     @Delete("/:post_id")
@@ -184,11 +163,15 @@ export class CreatorPostController {
             }
             throw new BadRequestException(result);
         }
+        const deletedPost = await this.postService.getAvailablePostById(
+            postId,
+            true,
+        );
         this.postVerification.createVerification({
             type: VERIFICATION_TYPES.DELETED,
             post_id: postId,
             author_id: author.role_id,
-            post_info: result.data,
+            post_info: deletedPost,
         });
         return {
             code: result.code,
@@ -251,62 +234,5 @@ export class CreatorPostController {
     async getAllTagsOfPostType() {
         const listTags = await this.tagService.getAllTagsByType(TAG_TYPES.post);
         return listTags;
-    }
-
-    @Get("/pending/search/:page")
-    @Serialize(PaginatedVerificationDTO)
-    async getPendingPosts(
-        @Param("page", ParsePagePipe) page: number,
-        @Query(QueryValidationPipe) query: SearchVerificationDTO,
-        @Query("group", ParseBoolPipe) group = false,
-        @AuthUserDecorator() author: RoleUserData,
-    ) {
-        const status = query.status;
-        let active = true;
-        const limitOptions = {
-            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
-            limit: this.DEFAULT_PAGE_SIZE,
-        };
-        if (status !== VERIFICATION_STATUS.VERIFIED) {
-            active = false;
-        }
-
-        const [{ count, results }, groupResult] = await Promise.all([
-            this.postVerification.findVerifications(
-                query,
-                {
-                    authorId: author.role_id,
-                    groups: [
-                        {
-                            type: "post",
-                            options: {
-                                metadata: true,
-                                topic: true,
-                                active,
-                            },
-                        },
-                    ],
-                },
-                limitOptions,
-            ),
-            group
-                ? this.postVerification.getSumVerificationGroupByCreator(
-                      author.role_id,
-                  )
-                : Promise.resolve(true),
-        ]);
-        const paginatedResult = (await this.pendingPostPaginator.paginate(
-            results,
-            count,
-            {
-                page,
-                additionQuery: query,
-            },
-        )) as PaginatedVerificationDTO;
-        if (!group) {
-            return paginatedResult;
-        }
-        paginatedResult.groups = groupResult;
-        return paginatedResult;
     }
 }

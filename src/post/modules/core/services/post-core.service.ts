@@ -18,7 +18,6 @@ export class PostCoreService {
         private postMetadataModel: Model<PostMetadata>,
         @InjectModel(Topic.name)
         private topicModel: Model<Topic>,
-        private fileUploader: CloudinaryService,
         private postMetadataService: PostMetadataService,
         private logger: Logger,
     ) {}
@@ -188,23 +187,23 @@ export class PostCoreService {
             return false;
         }
         try {
-            const [, postMetdata] = await Promise.all([
+            await Promise.all([
                 post.delete(),
                 this.postMetadataModel.findByIdAndDelete(post.post_metadata_id),
             ]);
-            Promise.all([
-                this.fileUploader.deleteFile(postMetdata.content_file_id, {
-                    resource_type: "raw",
-                }),
-                this.fileUploader.deleteFile(postMetdata.thumbnail_file_id),
-            ]).then((results) => {
-                results.forEach(({ code, public_id }) => {
-                    code &&
-                        this.logger.error(
-                            "Error when deleting file: " + public_id,
-                        );
-                });
-            });
+            // Promise.all([
+            //     this.fileUploader.deleteFile(postMetdata.content_file_id, {
+            //         resource_type: "raw",
+            //     }),
+            //     this.fileUploader.deleteFile(postMetdata.thumbnail_file_id),
+            // ]).then((results) => {
+            //     results.forEach(({ code, public_id }) => {
+            //         code &&
+            //             this.logger.error(
+            //                 "Error when deleting file: " + public_id,
+            //             );
+            //     });
+            // });
             return post;
         } catch (err) {
             this.logger.error(err);

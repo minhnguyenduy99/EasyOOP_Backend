@@ -19,7 +19,7 @@ export class SearchVerificationDTO {
     @Expose({
         name: "sort_by",
     })
-    @Transform(({ value }) => value ?? "created_date")
+    @Transform(({ value }) => value ?? "last_edited_date")
     @IsOptional()
     sortBy?: string;
 
@@ -31,13 +31,18 @@ export class SearchVerificationDTO {
     @IsOptional()
     sortOrder?: string;
 
-    @Transform(({ value }) => parseInt(value) ?? null)
-    @IsIn(Object.values(VERIFICATION_TYPES).concat(null))
-    @IsOptional()
-    type?: number;
-
-    @Transform(({ value }) => parseInt(value) ?? null)
-    @IsIn(Object.values(VERIFICATION_STATUS).concat(null))
+    @Transform(({ value }) =>
+        value === null || value === undefined ? null : parseInt(value),
+    )
     @IsOptional()
     status?: number;
+
+    /**
+     * For Manager only
+     */
+    @Expose({
+        name: "creator_id",
+    })
+    @IsOptional()
+    creatorId?: string;
 }

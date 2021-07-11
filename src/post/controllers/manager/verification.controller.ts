@@ -1,11 +1,9 @@
 import {
     BadRequestException,
-    ClassSerializerInterceptor,
     Controller,
     Get,
+    NotFoundException,
     Param,
-    ParseBoolPipe,
-    ParseIntPipe,
     Put,
     Query,
     UseGuards,
@@ -14,6 +12,7 @@ import {
 import { AuthUserDecorator, TokenAuth } from "src/lib/authentication";
 import { AuthorizeClass } from "src/lib/authorization";
 import {
+    ParamValidationPipe,
     QueryValidationPipe,
     ResponseSerializerInterceptor,
     Serialize,
@@ -24,8 +23,8 @@ import {
     ParsePagePipe,
 } from "src/lib/pagination";
 import { CommonResponse } from "src/lib/types";
+import { POST_ERRORS } from "src/post/helpers";
 import { PostVerificationService } from "src/post/modules/post-verification";
-import { VERIFICATION_STATUS } from "src/post/modules/post-verification/consts";
 import {
     PostVerificationDTO,
     SearchVerificationDTO,
@@ -85,12 +84,47 @@ export class PostVerificationController {
         return result;
     }
 
-    @Get("/summary")
-    async getSummaryGroupByManager(@AuthUserDecorator() manager: RoleUserData) {
-        const result = await this.postVerification.getSumVerificationGroupByManager(
-            manager.role_id,
+    @Get("/posts/:post_id")
+    @Serialize(PostVerificationDTO)
+    async getHistoryOfPost(
+        @Param("post_id", ParamValidationPipe)
+        postId: string,
+    ) {
+        const verifications = await this.postVerification.getVerificationByPost(
+            postId,
         );
-        return result;
+        if (verifications.length === 0) {
+            throw new NotFoundException(POST_ERRORS.PostNotFound);
+        }
+        return verifications;
+    }
+
+    @Get("/search/:page")
+    @Serialize(PaginatedVerificationDTO)
+    async getVerificationsGroupedByPost(
+        @Param("page", ParsePagePipe) page: number,
+        @Query(QueryValidationPipe) query: SearchVerificationDTO,
+    ) {
+        const limitOptions = {
+            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
+            limit: this.DEFAULT_PAGE_SIZE,
+        };
+        const {
+            count,
+            results,
+        } = await this.postVerification.findVerificationGroupedByPost(
+            query,
+            {
+                authorId: query.creatorId,
+            },
+            limitOptions,
+        );
+
+        const paginatedResult = (await this.paginator.paginate(results, count, {
+            page,
+            additionQuery: query,
+        })) as PaginatedVerificationDTO;
+        return paginatedResult;
     }
 
     @Get("/:id")
@@ -100,75 +134,5 @@ export class PostVerificationController {
             verificationId,
         );
         return result;
-    }
-
-    @Get("/pending/search/:page")
-    @Serialize(PaginatedVerificationDTO)
-    async findPendingVerifications(
-        @Param("page", ParsePagePipe) page: number,
-        @Query(QueryValidationPipe) search: SearchVerificationDTO,
-        @Query("group", ParseBoolPipe) group = false,
-        @AuthUserDecorator() manager: RoleUserData,
-    ) {
-        search = {
-            ...search,
-            status: VERIFICATION_STATUS.PENDING,
-        };
-        const limitOptions = {
-            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
-            limit: this.DEFAULT_PAGE_SIZE,
-        };
-        const [{ count, results }, groupResult] = await Promise.all([
-            this.postVerification.findVerifications(search, null, limitOptions),
-            group
-                ? this.postVerification.getSumVerificationGroupByManager(
-                      manager.role_id,
-                  )
-                : Promise.resolve(true),
-        ]);
-        const paginatedResult = (await this.paginator.paginate(results, count, {
-            page,
-        })) as PaginatedVerificationDTO;
-        if (!group) {
-            return paginatedResult;
-        }
-        paginatedResult.groups = groupResult;
-        return paginatedResult;
-    }
-
-    @Get("/search/:page")
-    @Serialize(PaginatedVerificationDTO)
-    async findVerifications(
-        @Param("page", ParsePagePipe) page: number,
-        @Query(QueryValidationPipe) search: SearchVerificationDTO,
-        @Query("group", ParseBoolPipe) group = false,
-        @AuthUserDecorator() manager: RoleUserData,
-    ) {
-        const limitOptions = {
-            start: (page - 1) * this.DEFAULT_PAGE_SIZE,
-            limit: this.DEFAULT_PAGE_SIZE,
-        };
-        const [{ count, results }, groupResult] = await Promise.all([
-            this.postVerification.findVerifications(
-                search,
-                {
-                    managerId: manager.role_id,
-                },
-                limitOptions,
-            ),
-            group
-                ? this.postVerification.getSumVerificationGroupByManager(
-                      manager.role_id,
-                  )
-                : Promise.resolve(true),
-        ]);
-        const paginatedResult = (await this.paginator.paginate(results, count, {
-            page,
-        })) as PaginatedVerificationDTO;
-        if (!group) {
-            return paginatedResult;
-        }
-        paginatedResult.groups = groupResult;
-        return paginatedResult;
     }
 }

@@ -4,7 +4,6 @@ import {
     NotFoundException,
     Param,
     ParseBoolPipe,
-    ParseIntPipe,
     Query,
     UseGuards,
     UseInterceptors,
@@ -18,6 +17,7 @@ import {
 } from "src/lib/helpers";
 import { PostDTO } from "src/post/dtos";
 import { PostService } from "src/post/services";
+import { POST_ERRORS } from "../../helpers";
 import { RoleAuthorizationGuard } from "src/role-management";
 
 @Controller("/manage/posts")
@@ -44,5 +44,18 @@ export class PostManagerController {
             });
         }
         return post;
+    }
+
+    @Get("/:post_id/status/all")
+    @Serialize(PostDTO)
+    async getAllVersionsOfPost(
+        @Param("post_id", ParamValidationPipe)
+        postId: string,
+    ) {
+        const posts = await this.postService.getAllVersionsOfPost(postId);
+        if (posts.length === 0) {
+            throw new NotFoundException(POST_ERRORS.PostNotFound);
+        }
+        return posts;
     }
 }

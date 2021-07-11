@@ -5,7 +5,7 @@ import { Model } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
 import { LimitOptions } from "src/post/dtos";
 import { POST_ERRORS } from "src/post/helpers";
-import { CommitActionResult, ERRORS, PostMetadata } from "../../core";
+import { CommitActionResult } from "../../core";
 import { VERIFICATION_STATUS, VERIFICATION_TYPES } from "../consts";
 import {
     CreateVerificationDTO,
@@ -25,11 +25,16 @@ export interface IPostVerificationService {
         id: string,
         queryOptions?: QueryOptions,
     ): Promise<PostVerification>;
-    findVerifications(
+    getVerificationByPost(postId: string): Promise<PostVerification[]>;
+    findVerificationGroupedByPost(
         input: SearchVerificationDTO,
         queryOptions?: QueryOptions,
         limitOptions?: LimitOptions,
     ): Promise<any>;
+    getLatestVerifications(
+        limit?: number,
+        queyrOptions?: QueryOptions,
+    ): Promise<PostVerification[]>;
     verify(
         id: string,
         verifyOptions: VerifyOptions,
@@ -57,6 +62,76 @@ export class PostVerificationService implements IPostVerificationService {
         private logger: Logger,
         private eventEmitter: EventEmitter2,
     ) {}
+
+    async getVerificationByPost(postId: string): Promise<PostVerification[]> {
+        const builder = new AggregateBuilder();
+        builder
+            .match({
+                post_id: postId,
+            })
+            .removeFields(["custom_info.post_info"]);
+        this.verificationHelper
+            .groupWithCreator(builder)
+            .groupWithManager(builder)
+            .sort(builder, { sortField: "created_date", sortOrder: "desc" });
+
+        const verifications = await this.verificationModel
+            .aggregate(builder.log(null).build())
+            .exec();
+
+        return verifications;
+    }
+
+    async getLatestVerifications(
+        limit?: number,
+        queryOptions?: QueryOptions,
+    ): Promise<PostVerification[]> {
+        limit = limit ?? 4;
+        const { authorId = null } = queryOptions ?? {};
+        const builder = new AggregateBuilder();
+        this.verificationHelper
+            .filter(builder, { authorId })
+            .sort(builder, {
+                sortField: "created_date",
+                sortOrder: "desc",
+            })
+            .limit(builder, { start: 0, limit });
+
+        const queryResult = await this.verificationModel
+            .aggregate(builder.log(null).build())
+            .exec();
+
+        const [{ results }] = queryResult;
+        return results;
+    }
+
+    async findVerificationGroupedByPost(
+        input: SearchVerificationDTO,
+        queryOptions?: QueryOptions,
+        limitOptions?: LimitOptions,
+    ): Promise<any> {
+        const { sortBy: sortField, sortOrder, search, status } = input;
+        const { start, limit } = limitOptions;
+        const { managerId = null, authorId = null } = queryOptions ?? {};
+        const builder = new AggregateBuilder();
+        this.verificationHelper
+            .filter(builder, { authorId, managerId, search })
+            .groupByPost(builder, { status })
+            .sort(builder, { sortField, sortOrder })
+            .limit(builder, {
+                start,
+                limit,
+            });
+        const queryResult = await this.verificationModel
+            .aggregate(builder.log(null).build())
+            .exec();
+
+        const [{ results, count }] = queryResult;
+        return {
+            count,
+            results,
+        };
+    }
 
     async getSumVerificationGroupByManager(managerId: string) {
         const builder = new AggregateBuilder();
@@ -138,10 +213,15 @@ export class PostVerificationService implements IPostVerificationService {
         id: string,
     ): Promise<CommitActionResult<{ verification_id: string }>> {
         try {
-            const verification = await this.verificationModel.findOneAndDelete({
-                verification_id: id,
-                status: VERIFICATION_STATUS.PENDING,
-            });
+            const verification = await this.verificationModel.findOneAndUpdate(
+                {
+                    verification_id: id,
+                    status: VERIFICATION_STATUS.PENDING,
+                },
+                {
+                    status: VERIFICATION_STATUS.CANCEL,
+                },
+            );
             if (!verification) {
                 return POST_ERRORS.VerificationNotFound;
             }
@@ -274,53 +354,43 @@ export class PostVerificationService implements IPostVerificationService {
         id: string,
         queryOptions?: QueryOptions,
     ): Promise<PostVerification> {
-        const { managerId } = queryOptions;
-        const builder = new AggregateBuilder();
-        builder
-            .match({
+        const verification = await this.verificationModel.findOne(
+            {
                 verification_id: id,
-            })
-            .match({
-                manager_id: managerId,
-            });
-        this.verificationHelper.groupWithPosts(builder, {
-            metadata: true,
-            topic: true,
+            },
+            {
+                status: 1,
+                type: 1,
+            },
+        );
+        const cancelOrUnverified = [
+            VERIFICATION_STATUS.CANCEL,
+            VERIFICATION_STATUS.UNVERIFIED,
+        ].includes(verification.status);
+        const isVerifiedDeletion =
+            verification.status === VERIFICATION_STATUS.VERIFIED &&
+            verification.type === VERIFICATION_TYPES.DELETED;
+        const builder = new AggregateBuilder();
+        builder.match({
+            verification_id: id,
         });
+        this.verificationHelper.filter(builder, {});
+        cancelOrUnverified || isVerifiedDeletion
+            ? this.verificationHelper.usePostInfo(builder)
+            : this.verificationHelper.groupWithPosts(builder, {
+                  metadata: true,
+                  topic: true,
+                  tag: true,
+              });
+        this.verificationHelper
+            .groupWithManager(builder)
+            .groupWithCreator(builder);
+
         const results = await this.verificationModel.aggregate(builder.build());
         if (results.length === 0) {
             return null;
         }
         return results[0];
-    }
-
-    async findVerifications(
-        input: SearchVerificationDTO,
-        queryOptions?: QueryOptions,
-        limitOptions?: LimitOptions,
-    ): Promise<any> {
-        const { type, sortBy: sortField, sortOrder, status, search } = input;
-        const { start, limit } = limitOptions;
-        const { managerId = null, authorId = null, groups = [] } =
-            queryOptions ?? {};
-        const builder = new AggregateBuilder();
-        this.verificationHelper
-            .filter(builder, { authorId, managerId, type, status, search })
-            .sort(builder, { sortField, sortOrder })
-            .group(builder, groups)
-            .limit(builder, {
-                start,
-                limit,
-            });
-        const queryResult = await this.verificationModel
-            .aggregate(builder.log(null).build())
-            .exec();
-
-        const [{ results, count }] = queryResult;
-        return {
-            count,
-            results,
-        };
     }
 
     async batchDelete(verificationIds: string[], creatorId: string) {
@@ -369,6 +439,9 @@ export class PostVerificationService implements IPostVerificationService {
         try {
             input["post_title"] = post_info?.post_title;
             input["status"] = VERIFICATION_STATUS.PENDING;
+            input["custom_info"] = {
+                post_info,
+            };
             const verification = await this.verificationModel.create(input);
             this.eventEmitter.emitAsync(
                 POST_VERIFICAITON_EVENTS.VERIFICATION_CREATED,

@@ -6,12 +6,25 @@ export default {
             actions: [
                 "createPost",
                 "updatePost",
-                "updatePendingPost",
+                "getPostById",
                 "deletePost",
                 "getPosts",
-                "getPendingPosts",
                 "getLatestPostOfTopic",
                 "getAllTagsOfPostType",
+                "getAllVersionsOfPost",
+            ],
+        },
+        {
+            policyName: "creatorActionsOnVerification",
+            entity: "CreatorVerification",
+            actions: [
+                "cancelVerification",
+                "batchDelete",
+                "getLatestVerifications",
+                "getHistoryOfPost",
+                "update",
+                "getVerificationsGroupedByPost",
+                "getVerificationById",
             ],
         },
         {
@@ -25,22 +38,25 @@ export default {
             actions: [
                 "verify",
                 "unverify",
-                "getSummaryGroupByManager",
+                "getVerificationsGroupedByPost",
                 "getDetailedVerification",
-                "findPendingVerifications",
-                "findVerifications",
+                "getHistoryOfPost",
             ],
         },
         {
             policyName: "managerActionsOnPosts",
             entity: "ManagerPost",
-            actions: ["getPostById"],
+            actions: ["getPostById", "getAllVersionsOfPost"],
         },
     ],
     assigns: {
         creator: [
             { entity: "CreatorPost", policies: ["creatorActionsOnPost"] },
             { entity: "CreatorTopic", policies: ["creatorActionsOnTopic"] },
+            {
+                entity: "CreatorVerification",
+                policies: ["creatorActionsOnVerification"],
+            },
         ],
         manager: [
             {

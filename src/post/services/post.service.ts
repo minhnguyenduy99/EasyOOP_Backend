@@ -27,8 +27,7 @@ import {
     CreatePostDTO,
     CommitActionResult,
 } from "../modules/core";
-import { ERRORS } from "../modules/core";
-import { Tag, TagService } from "src/tag";
+import { Tag } from "src/tag";
 
 export interface IPostService {
     createPost(dto: CreatePostDTO): Promise<CommitActionResult<Post>>;
@@ -42,6 +41,7 @@ export interface IPostService {
         sort?: SortOptions,
     ): Promise<PaginatedResult>;
     getPostById(postId: string, active?: boolean): Promise<Post>;
+    getAllVersionsOfPost(postId: string): Promise<Post[]>;
     getPostByTopic(
         topicId: string,
         limit?: LimitOptions,
@@ -69,6 +69,22 @@ export class PostService implements IPostService {
         private eventEmitter: EventEmitter2,
         private logger: Logger,
     ) {}
+
+    async getAllVersionsOfPost(postId: string): Promise<Post[]> {
+        const builder = new AggregateBuilder();
+        builder.match({
+            post_id: postId,
+        });
+        this.postExtender
+            .sort({ field: "post_status", asc: true }, builder)
+            .groupWithTopic(builder)
+            .groupWithTags(builder)
+            .groupWithMetadata(builder);
+
+        const posts = await this.postModel.aggregate(builder.build()).exec();
+
+        return posts;
+    }
 
     async getPosts(
         filterOptions: PostFilterOptions,
@@ -117,7 +133,7 @@ export class PostService implements IPostService {
         postId: string,
         dto: CreatePostDTO,
     ): Promise<CommitActionResult<Post>> {
-        const post = await this.postCoreService.getPostById(postId);
+        const post = await this.postCoreService.getPostById(postId, false);
         if (!post) {
             return POST_ERRORS.PostNotFound;
         }
@@ -164,6 +180,35 @@ export class PostService implements IPostService {
         return createPostResult;
     }
 
+    async getAvailablePostById(postId: string, available = true) {
+        const builder = new AggregateBuilder();
+        builder.match({
+            post_id: postId,
+        });
+        this.postExtender
+            .filterByAvailable(builder, available)
+            .groupWithAdjacentPost(
+                builder,
+                { queryField: "previous_post_id", as: "previous_post" },
+                { queryField: "next_post_id", as: "next_post" },
+            )
+            .groupWithMetadata(builder)
+            .groupWithTopic(builder)
+            .groupWithTags(builder);
+
+        const [count, [result]] = await Promise.all([
+            this.postModel
+                .find({
+                    post_id: postId,
+                })
+                .count()
+                .exec(),
+            this.postModel.aggregate(builder.build()).exec(),
+        ]);
+        result && (result.is_pending = count > 1);
+        return result;
+    }
+
     async getPostById(postId: string, active = true): Promise<any> {
         const builder = new AggregateBuilder();
         builder.match({
@@ -203,7 +248,9 @@ export class PostService implements IPostService {
         builder
             .match({
                 post_id: topic.first_post_id,
-                post_status: POST_STATUSES.ACTIVE,
+                post_status: {
+                    $in: [POST_STATUSES.ACTIVE, POST_STATUSES.PENDING_DELETED],
+                },
             })
             .aggregate({
                 $facet: {
@@ -225,7 +272,12 @@ export class PostService implements IPostService {
                                 as: "list_posts",
                                 depthField: "order",
                                 restrictSearchWithMatch: {
-                                    post_status: POST_STATUSES.ACTIVE,
+                                    post_status: {
+                                        $in: [
+                                            POST_STATUSES.ACTIVE,
+                                            POST_STATUSES.PENDING_DELETED,
+                                        ],
+                                    },
                                 },
                             },
                         },

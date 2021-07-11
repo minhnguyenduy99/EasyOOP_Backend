@@ -42,6 +42,22 @@ export class PostServiceExtender {
         return this;
     }
 
+    filterByAvailable(builder: AggregateBuilder, available = true) {
+        const availablePostStatues = [
+            POST_STATUSES.ACTIVE,
+            POST_STATUSES.PENDING_DELETED,
+        ];
+        const match = available
+            ? {
+                  post_status: {
+                      $in: availablePostStatues,
+                  },
+              }
+            : { post_status: { $nin: availablePostStatues } };
+        builder.match(match);
+        return this;
+    }
+
     filterByActive(builder: AggregateBuilder, active = true) {
         const match = active
             ? { post_status: POST_STATUSES.ACTIVE }

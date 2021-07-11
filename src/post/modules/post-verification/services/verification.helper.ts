@@ -78,9 +78,37 @@ export class VerificationHelper {
             localField: "manager_id",
             foreignField: "role_id",
             as: "manager",
-            mergeObject: true,
-            removeFields: ["__v", "role_id", "user_id"],
+            single: true,
+            removeFields: ["__v"],
         });
+        return this;
+    }
+
+    groupWithCreator(builder: AggregateBuilder) {
+        builder.lookup({
+            from: "creators",
+            localField: "author_id",
+            foreignField: "role_id",
+            single: true,
+            as: "creator",
+            removeFields: ["__v"],
+        });
+        return this;
+    }
+
+    usePostInfo(builder: AggregateBuilder) {
+        builder.aggregate([
+            {
+                $set: {
+                    post: "$custom_info.post_info",
+                },
+            },
+            {
+                $project: {
+                    "custom_info.post_info": 0,
+                },
+            },
+        ]);
         return this;
     }
 
@@ -89,7 +117,7 @@ export class VerificationHelper {
             metadata = false,
             topic = false,
             tag = false,
-            verificationStatus = VERIFICATION_STATUS.VERIFIED,
+            verificationStatus = null,
         } = options ?? {};
 
         let postFilter = null;
@@ -103,7 +131,6 @@ export class VerificationHelper {
                     ],
                 };
                 break;
-            case VERIFICATION_STATUS.CANCEL:
             case VERIFICATION_STATUS.PENDING:
                 postFilter = {
                     post_status: { $ne: POST_STATUSES.ACTIVE },
@@ -111,7 +138,6 @@ export class VerificationHelper {
         }
 
         groupWithPosts(this.postModel, postFilter);
-
         metadata && groupWithMetadata(this.metadataModel);
         topic && groupWithTopic(this.topicModel);
         tag && groupWithTags();
@@ -145,21 +171,59 @@ export class VerificationHelper {
         }
 
         function groupWithPosts(postModel, filter) {
-            return builder.lookup({
-                from: postModel,
-                localField: "post_id",
-                foreignField: "post_id",
-                ...(filter && {
+            let defaultFilter = {
+                $expr: {
+                    $and: [
+                        {
+                            $or: [
+                                {
+                                    $eq: [
+                                        "$$status",
+                                        VERIFICATION_STATUS.VERIFIED,
+                                    ],
+                                },
+                                {
+                                    $eq: [
+                                        "$$status",
+                                        VERIFICATION_STATUS.PENDING,
+                                    ],
+                                },
+                            ],
+                        },
+                        {
+                            $or: [
+                                { post_status: POST_STATUSES.ACTIVE },
+                                {
+                                    post_status: POST_STATUSES.PENDING_DELETED,
+                                },
+                            ],
+                        },
+                    ],
+                },
+            };
+            filter = filter ?? defaultFilter;
+            return builder
+                .lookup({
+                    from: postModel,
+                    localField: "post_id",
+                    foreignField: "post_id",
+                    letExpr: {
+                        status: "$status",
+                    },
                     pipeline: [
                         {
                             $match: filter,
                         },
                     ],
-                }),
-                removeFields: ["__v", "previous_post_id", "next_post_id"],
-                single: true,
-                as: "post",
-            });
+                    removeFields: ["__v", "previous_post_id", "next_post_id"],
+                    single: true,
+                    as: "post",
+                })
+                .aggregate({
+                    $project: {
+                        "custom_info.post_info": 0,
+                    },
+                });
         }
 
         function groupWithTags() {
@@ -258,6 +322,53 @@ export class VerificationHelper {
                 },
             },
         ]);
+        return this;
+    }
+
+    groupByPost(builder: AggregateBuilder, filter: { status: number } = null) {
+        const { status } = filter ?? {};
+        const postRemovedFields = [
+            "__v",
+            "tags",
+            "post_status",
+            "topic_id",
+            "post_type",
+            "post_metadata_id",
+            "next_post_id",
+            "previous_post_id",
+        ];
+
+        builder
+            .sort({
+                created_date: -1,
+            })
+            .aggregate({
+                $group: {
+                    _id: "$post_id",
+                    verification: { $first: "$$ROOT" },
+                    verification_count: {
+                        $sum: 1,
+                    },
+                },
+            })
+            .match({
+                ...((status || status === 0) && {
+                    "verification.status": status,
+                }),
+            })
+            .aggregate({
+                $replaceRoot: {
+                    newRoot: {
+                        $mergeObjects: ["$$ROOT", "$verification"],
+                    },
+                },
+            })
+            .aggregate({
+                $addFields: {
+                    last_edited_date: "$created_date",
+                },
+            })
+            .removeFields(["verification", "custom_info", "created_date"]);
         return this;
     }
 }
