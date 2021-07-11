@@ -9,6 +9,7 @@ export interface LookupOptions extends BaseLookupOptions {
     mergeOn?: string;
     removeFields?: string[];
     outer?: boolean;
+    letExpr?: any;
 }
 
 export interface PipelineLookupOptions extends BaseLookupOptions {

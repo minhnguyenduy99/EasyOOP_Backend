@@ -96,6 +96,7 @@ export class AggregateBuilder {
             mergeObject = false,
             mergeOn = "ROOT",
             outer = true,
+            letExpr = null,
         } = option;
         let from;
         if (typeof _from !== "string") {
@@ -114,6 +115,7 @@ export class AggregateBuilder {
             from,
             let: {
                 local_field: `$${localField}`,
+                ...(letExpr && letExpr),
             },
             pipeline: [
                 {
