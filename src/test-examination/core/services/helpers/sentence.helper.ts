@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { AggregateBuilder } from "src/lib/database/mongo";
-import { TestExamination } from "../../models";
+import { TestExamination, TestTopic } from "../../models";
 import { SentenceFilterOptions, TestFilter } from "../interfaces";
 
 @Injectable()
@@ -13,6 +13,8 @@ export class SentenceServiceHelper {
         private logger: Logger,
         @InjectModel(TestExamination.name)
         private testModel: Model<TestExamination>,
+        @InjectModel(TestTopic.name)
+        private testTopicModal: Model<TestTopic>,
     ) {
         this.builder = new AggregateBuilder();
     }
@@ -21,6 +23,19 @@ export class SentenceServiceHelper {
         const { test_id } = options;
         this.builder.match({
             ...(test_id && { test_id }),
+        });
+        return this;
+    }
+
+    groupWithTopic() {
+        this.builder.lookup({
+            from: this.testTopicModal,
+            localField: "topic_id",
+            foreignField: "topic_id",
+            mergeObject: true,
+            single: true,
+            as: "topic",
+            removeFields: ["__v"],
         });
         return this;
     }

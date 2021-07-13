@@ -250,8 +250,6 @@ export class TestExaminationController {
 
         const { results, count } = sentenceResult;
 
-        console.log(sentenceResult);
-
         const paginatedResult = await this.sentenceResultPaginator.paginate(
             results,
             count,

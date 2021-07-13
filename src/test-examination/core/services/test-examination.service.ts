@@ -117,6 +117,7 @@ export class TestExaminationService {
         const aggregates = this.sentenceServiceHelper
             .filterByTestId({ test_id: testId })
             .groupByTest()
+            .groupWithTopic()
             .build();
 
         const [test] = await this.sentenceModel.aggregate(aggregates);

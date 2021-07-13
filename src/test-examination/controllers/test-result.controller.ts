@@ -37,6 +37,7 @@ import {
     TestResultService,
     TestSessionService,
 } from "../core";
+import { ERRORS } from "../helpers";
 
 @Controller("test-results")
 @UseInterceptors(ResponseSerializerInterceptor)
@@ -83,6 +84,35 @@ export class TestResultController {
         if (result.error) {
             throw new BadRequestException(result);
         }
+        return result;
+    }
+
+    @Post("/by-session/:sessionId")
+    @Serialize(CommonResponse(TestResultDTO))
+    @TokenAuth()
+    async saveTestResultOfSession(
+        @Param("sessionId") sessionId: string,
+        @AuthUserDecorator() user: AuthUserDto,
+    ) {
+        const session = await this.testSessionService.getTestSessionById(
+            sessionId,
+        );
+        if (!session) {
+            throw new NotFoundException(ERRORS.TestSessionNotEstablished);
+        }
+        const dto = {
+            test_id: session.testId,
+            user_id: user.user_id,
+            results: session.userAnswers.map((answer) => ({
+                sentence_id: answer.sentenceId,
+                user_answer: answer.userAnswer,
+            })),
+        } as CreateTestResultDTO;
+        const result = await this.testResultService.createTestResult(dto, true);
+        if (result.error) {
+            throw new BadRequestException(result);
+        }
+        this.testSessionService.deleteSession(sessionId);
         return result;
     }
 
