@@ -48,6 +48,10 @@ const keyword = [
 		key: ["abstraction class","abstract class","lớp ảo","lớp trừu tượng"]
 	},
 	{
+		topic: "__label__abstract_factory",
+		key: ["abstract factory","abstract factory pattern"]
+	},
+	{
 		topic: "__label__friend_function",
 		key: ["friend method","friend function","hàm bạn","phương thức bạn"]
 	},
@@ -60,12 +64,36 @@ const keyword = [
 		key: ["principle solid","nguyên tắc solid","solid"]
 	},
 	{
+		topic: "__label__design_pattern",
+		key: ["design pattern","mẫu thiết kế"]
+	},
+	{
+		topic: "__label__behavioral",
+		key: ["behavioral","mẫu hành vi"]
+	},
+	{
+		topic: "__label__creational",
+		key: ["creational","creational pattern","mẫu khởi tạo"]
+	},
+	{
 		topic: "__label__virtual",
 		key: ["virtual","hàm ảo","phương thức ảo"]
 	},
 	{
 		topic: "__label__static",
 		key: ["static","static field","static method","tĩnh","hàm tĩnh","phương thức tĩnh","trường tĩnh"]
+	},
+	{
+		topic: "__label__dry",
+		key: ["dry","dont repeat yourself"]
+	},
+	{
+		topic: "__label__uml",
+		key: ["uml","sơ đồ lớp"]
+	},
+	{
+		topic: "__label__template_design",
+		key: ["template","template pattern"]
 	},
 	{
 		topic: "__label__derived_class",
@@ -80,8 +108,16 @@ const keyword = [
 		key: ["friend class","lớp bạn"]
 	},
 	{
+		topic: "__label__nested_class",
+		key: ["nested class","lớp lồng"]
+	},
+	{
 		topic: "__label__polymorphism",
 		key: ["polymorphism","đa hình"]
+	},
+	{
+		topic: "__label__abstraction",
+		key: ["abstraction","ảo","trừu tượng"]
 	},
 	{
 		topic: "__label__constructor",
@@ -100,16 +136,44 @@ const keyword = [
 		key: ["destructor","hàm hủy"]
 	},
 	{
+		topic: "__label__structural",
+		key: ["structural","structural pattern"]
+	},
+	{
 		topic: "__label__attribute",
 		key: ["attribute","thuộc tính"]
+	},
+	{
+		topic: "__label__interface",
+		key: ["interface","giao diện"]
 	},
 	{
 		topic: "__label__overwrite",
 		key: ["overwrite","ghi đè"]
 	},
 	{
+		topic: "__label__prototype",
+		key: ["prototype","prototype pattern"]
+	},
+	{
+		topic: "__label__beginner",
+		key: ["beginner","cơ bản"]
+	},
+	{
 		topic: "__label__overload",
 		key: ["overload","nạp chồng"]
+	},
+	{
+		topic: "__label__strategy",
+		key: ["strategy","strategy pattern"]
+	},
+	{
+		topic: "__label__advance",
+		key: ["nâng cao","advance"]
+	},
+	{
+		topic: "__label__builder",
+		key: ["builder","builder pattern"]
 	},
 	{
 		topic: "__label__method",
