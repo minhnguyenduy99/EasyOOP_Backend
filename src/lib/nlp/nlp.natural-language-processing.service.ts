@@ -44,8 +44,8 @@ export class NaturalLanguageProcessing {
                     for (let i = 0; i < len; i++)
                         ret.push({
                             raw: raws[i],
-                            type: resType[i],
-                            topic: resTopic[i]
+                            type: resType[i] || [],
+                            topic: resTopic[i] || []
                         })
                     if (option.fixMissing) {
                         for (let i = 1; i < len; i++) {
