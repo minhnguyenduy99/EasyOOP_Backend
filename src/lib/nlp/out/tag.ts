@@ -54,7 +54,7 @@ const topic = {
 
 const type = {
 	__label__about: "about",
-	__label__example: TagType.post,
+	__label__example: TagType.example,
 	__label__exercise: TagType.post,
 	__label__login: "login",
 	__label__menu: TagType.menu,

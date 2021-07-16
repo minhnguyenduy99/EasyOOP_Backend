@@ -71,7 +71,7 @@ export class TaskNLP implements ITask {
                 }
                 return this.taskTopic.handler(type, task.topic[0].label, task.raw)
             case Label.type.__label__exercise:
-                if (task.topic && task.topic[0].value > constant.trustThreshold)
+                if (task.topic.length > 0 && task.topic[0].value > constant.trustThreshold)
                     return this.taskExercise.searchTest(psid, task.topic[0].label)
                 else
                     return this.taskExercise.askWhatTest(psid)

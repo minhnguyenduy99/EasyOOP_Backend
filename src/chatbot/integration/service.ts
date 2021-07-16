@@ -17,6 +17,7 @@ export class IntegrationService {
         const { type, value } = question;
         switch (type) {
             case TagType.post:
+            case TagType.example:
                 return this.getPostResults(value);
             case TagType.menu:
                 return this.getMenuResults(value);
