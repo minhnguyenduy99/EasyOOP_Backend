@@ -5,9 +5,10 @@ const pos_tag = posTag();
 
 @Injectable()
 export class RuleBasedSentenceBoundaryDetection {
-    constructor(
-        private readonly regexp = new RegExp(/[`~!@#$%^&*()_|+\-=?:'"<>\{\}\[\]\\\/]/gi)
-    ){}
+    private readonly regexp: RegExp;
+    constructor() {
+        this.regexp = new RegExp(/[`~!@#$%^&*()_|+\-=:'"<>\{\}\[\]\\\/]/gi)
+    }
 
     private getAsync(input: string): string[] {
         input = input.replace(this.regexp, '');
