@@ -5,7 +5,12 @@ const pos_tag = posTag();
 
 @Injectable()
 export class RuleBasedSentenceBoundaryDetection {
+    constructor(
+        private readonly regexp = new RegExp(/[`~!@#$%^&*()_|+\-=?:'"<>\{\}\[\]\\\/]/gi)
+    ){}
+
     private getAsync(input: string): string[] {
+        input = input.replace(this.regexp, '');
         let data = null
         data = pos_tag.tag(input)
         data.forEach(e => e[1] = constant.postag2path[e[1]])
