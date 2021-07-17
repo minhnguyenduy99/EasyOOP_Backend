@@ -26,7 +26,7 @@ import { join } from "path";
 @Module({
     imports: [
         ConfigModule.forRoot({
-            envFilePath: ".production.env",
+            envFilePath: ".development.test.env",
             load: [AppConfig],
         }),
         AppConfigModule.forRoot({

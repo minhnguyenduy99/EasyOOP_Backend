@@ -7,6 +7,12 @@ export interface Question {
     value: string;
 }
 
+export type PostUrlHandler = (post: PostDTO) => string;
+
+export interface FromPostOptions {
+    postUrl: string | PostUrlHandler;
+}
+
 export class AnswerDTO {
     text: string;
     url?: string;
@@ -17,12 +23,14 @@ export class AnswerDTO {
         Object.assign(this, dto);
     }
 
-    static fromPosts(posts: PostDTO[]): AnswerDTO[] {
+    static fromPosts(posts: PostDTO[], options: FromPostOptions): AnswerDTO[] {
+        const { postUrl } = options;
         return posts.map(
             (post) =>
                 new AnswerDTO({
                     text: post.post_title,
-                    url: post["thumbnail_file_url"],
+                    url:
+                        typeof postUrl === "function" ? postUrl(post) : postUrl,
                     title: post.post_title,
                     image: post["thumbnail_file_url"],
                 }),
